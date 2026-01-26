@@ -5,19 +5,17 @@ const coinBox = document.getElementById('coin-box');
 const resultBox = document.getElementById('draw-result');
 const tableBg = document.getElementById('table-bg');
 
-// ===================== 新增：预加载配置 =====================
-// 1. 定义需要预加载的素材清单（根据你的实际文件调整）
+// ===================== 预加载配置（替换背景图为图床地址） =====================
 const PRELOAD_ASSETS = {
-  // 背景图
+  // 背景图：替换为图床地址
   backgrounds: [
-    '10012.jpg',
-    '10013.png'
+    'https://img.cdn1.vip/i/697766f1ab102_1769432817.png',  // 原10012.jpg
+    'https://img.cdn1.vip/i/697766f199bc5_1769432817.png'   // 原10013.png
   ],
-  // 钱币图标（先占位，后续从coins.json读取后补充）
   coins: []
 };
 
-// 2. 预加载函数
+// 预加载函数（无修改，仅加载新地址）
 async function preloadAssets() {
   const loadingMask = document.getElementById('loading-mask');
   const progressBar = document.getElementById('loading-progress');
@@ -32,9 +30,8 @@ async function preloadAssets() {
     const res = await fetch('coins.json');
     if (!res.ok) throw new Error('coins.json加载失败');
     const coinsData = await res.json();
-    // 补充钱币图标到预加载清单
     PRELOAD_ASSETS.coins = coinsData.map(coin => `icons/${coin.name}.png`);
-    allCoins = coinsData; // 提前赋值，避免重复请求
+    allCoins = coinsData;
   } catch (error) {
     console.error('加载coins.json失败：', error);
     alert('钱币配置文件加载失败，部分功能可能异常！');
@@ -48,7 +45,6 @@ async function preloadAssets() {
   // 步骤3：逐个加载素材
   for (const asset of allAssets) {
     try {
-      // 用Image对象预加载图片
       await new Promise((resolve, reject) => {
         const img = new Image();
         img.src = asset;
@@ -58,7 +54,7 @@ async function preloadAssets() {
       loaded++;
     } catch (error) {
       console.warn(error.message);
-      loaded++; // 即使失败也计入进度，避免卡住
+      loaded++;
     }
 
     // 更新加载进度
@@ -75,13 +71,13 @@ async function preloadAssets() {
   console.log('✅ 所有素材预加载完成！');
 }
 
-// ===================== 原有功能逻辑（无修改） =====================
+// ===================== 原有功能逻辑（仅替换startNewRound中的背景图地址） =====================
 // 绑定按钮事件
 document.getElementById('new-round').onclick = startNewRound;
 document.getElementById('next-layer').onclick = drawThree;
 document.getElementById('show-all').onclick = showAllCoins;
 
-// 初始化：创建自定义弹窗+遮罩
+// 初始化弹窗
 function initCustomAlert() {
   const overlay = document.createElement('div');
   overlay.id = 'alert-overlay';
@@ -127,12 +123,10 @@ function openAlert(content) {
   overlay.style.display = 'block';
 }
 
-// 加载钱币数据（复用预加载的allCoins，避免重复请求）
+// 加载钱币数据
 async function fetchCoins() {
-  // 如果预加载已获取数据，直接返回
   if (allCoins.length > 0) return allCoins;
   
-  // 兜底：预加载失败时重新请求
   try {
     const res = await fetch('coins.json');
     if (!res.ok) throw new Error(`请求失败：${res.status}`);
@@ -145,7 +139,7 @@ async function fetchCoins() {
   }
 }
 
-// 开始新局
+// 开始新局（核心修改：替换背景图地址为图床地址）
 async function startNewRound() {
   const coins = await fetchCoins();
   
@@ -178,7 +172,8 @@ async function startNewRound() {
   }
 
   layer = 0;
-  tableBg.style.backgroundImage = "url('10013.png')";
+  // 替换背景图地址为图床地址（原10013.png）
+  tableBg.style.backgroundImage = "url('https://img.cdn1.vip/i/697766f199bc5_1769432817.png')";
   renderCoinBox();
   resultBox.innerHTML = `<b>新一局开始！</b> 共抽取 ${roundCoins.length} 枚钱币。`;
 }
@@ -287,8 +282,8 @@ async function showAllCoins() {
   openAlert(effectText);
 }
 
-// ===================== 启动：先预加载，再初始化 =====================
+// 启动：先预加载，再初始化
 window.onload = async function() {
-  await preloadAssets(); // 先预加载所有素材
-  initCustomAlert();     // 再初始化弹窗
+  await preloadAssets();
+  initCustomAlert();
 };
