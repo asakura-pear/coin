@@ -1,23 +1,37 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>钱币抽取工具</title>
-<link rel="stylesheet" href="coin_draw.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>钱币抽奖</title>
+  <link rel="stylesheet" href="coin_draw.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC&display=swap" rel="stylesheet">
 </head>
 <body>
-
-<div class="table" id="table-bg">
-  <div class="button-bar">
-    <button id="new-round">开始新局</button>
-    <button id="next-layer">下一层</button>
-    <button id="show-all" class="right-btn">查看所有钱币效果</button>
+  <!-- 加载遮罩（预加载时显示） -->
+  <div id="loading-mask" style="position: fixed; top:0; left:0; width:100vw; height:100vh; background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:99999;">
+    <div style="color:#ffef9f; font-size:24px; margin-bottom:20px;">加载素材中...</div>
+    <div style="width:200px; height:8px; background:#333; border-radius:4px; overflow:hidden;">
+      <div id="loading-progress" style="width:0%; height:100%; background:#ffd700; transition:width 0.3s ease;"></div>
+    </div>
+    <div id="loading-text" style="color:#fff; font-size:14px; margin-top:10px;">0% 完成</div>
   </div>
 
-  <div id="coin-box"></div>
-  <div id="draw-result"></div>
-</div>
+  <div class="table" id="table-bg">
+    <!-- 按钮栏 -->
+    <div class="button-bar">
+      <button id="new-round">开始新局</button>
+      <button id="next-layer">下一层</button>
+      <button id="show-all" class="right-btn">查看所有效果</button>
+    </div>
 
-<script src="coin_draw.js"></script>
+    <!-- 钱币容器 -->
+    <div id="coin-box"></div>
+
+    <!-- 结果展示 -->
+    <div id="draw-result"></div>
+  </div>
+
+  <script src="coin_draw.js"></script>
 </body>
 </html>
