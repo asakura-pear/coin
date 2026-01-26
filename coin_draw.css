@@ -1,0 +1,246 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Noto Serif SC", serif;
+  background: #000;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.table {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: url('10012.jpg') no-repeat center center;
+  background-size: cover;
+  transition: background-image 0.8s ease-in-out;
+  overflow: hidden;
+}
+
+/* 按钮栏：统一容纳所有顶端按钮，同级排列 */
+.button-bar {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  width: auto;
+}
+
+button {
+  font-size: 18px;
+  padding: 10px 25px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(209, 73, 73, 0.9);
+  color: #fff;
+  cursor: pointer;
+  margin: 0;
+  box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+  backdrop-filter: blur(4px);
+}
+button:hover { 
+  background: rgba(232, 91, 91, 0.95); 
+}
+
+/* 核心：强制一行7个+所有行居中 */
+#coin-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -45%);
+  width: 750px; 
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  z-index: 5;
+}
+
+.coin {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  flex-shrink: 0;
+  /* 给名称预留足够空间，防止重叠 */
+  margin-bottom: 25px;
+}
+
+.coin.active {
+  transform: scale(1.3);
+  box-shadow: 0 0 25px gold;
+}
+
+/* 核心优化：钱币名称样式（醒目+无重叠+适配高亮） */
+.coin-name {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 5px; /* 缩短与钱币的间距但不重叠 */
+  font-size: 15px; /* 放大字号，更醒目 */
+  font-weight: 600; /* 加粗，提升辨识度 */
+  color: #ffef9f; /* 金黄色，比原米白更醒目，适配黑色背景 */
+  text-shadow: 0 0 4px #000, 0 0 8px #d4af37, 0 1px 2px #000; /* 多重阴影，抗锯齿+更突出 */
+  white-space: nowrap;
+  z-index: 10; /* 高于钱币层级，高亮时也不会被遮挡 */
+}
+
+#draw-result {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 800px;
+  text-align: center;
+  color: #fff9e6;
+  font-size: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  backdrop-filter: blur(3px);
+}
+
+.effect {
+  margin: 10px auto;
+  width: 90%;
+  background: rgba(255, 249, 230, 0.8);
+  border-radius: 8px;
+  padding: 10px;
+  color: #222;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+}
+
+h3 { margin-top: 0; }
+
+/* 自定义弹窗样式（淡粉色头部+防遮挡） */
+#custom-alert {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 700px;
+  max-height: 80vh;
+  background: #fff;
+  border: 2px solid #d14949;
+  border-radius: 10px;
+  padding: 0;
+  z-index: 9999;
+  display: none;
+  overflow: hidden;
+  font-family: "Noto Serif SC", serif;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+#alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+  z-index: 9998;
+  display: none;
+}
+
+#custom-alert .alert-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 20px;
+  margin: 0;
+  background: #fef0f0;
+  border-bottom: 1px solid #f0c0c0;
+}
+
+#custom-alert .close-btn {
+  padding: 6px 15px;
+  border: none;
+  border-radius: 6px;
+  background: #d14949;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#custom-alert .close-btn:hover {
+  background: rgba(232, 91, 91, 0.95);
+}
+
+#alert-content {
+  padding: 20px;
+  margin-top: 4px;
+  color: #333;
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-line;
+  max-height: calc(80vh - 70px);
+  overflow-y: auto;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .coin { 
+    width: 70px; 
+    height: 70px; 
+    margin-bottom: 20px; /* 移动端同步预留名称空间 */
+  }
+  /* 移动端名称适配，缩小但仍醒目 */
+  .coin-name {
+    font-size: 12px;
+    text-shadow: 0 0 3px #000, 0 0 6px #d4af37;
+  }
+  #coin-box {
+    width: 90%;
+    gap: 15px;
+  }
+  button {
+    font-size: 14px;
+    padding: 8px 18px;
+  }
+  .button-bar {
+    gap: 10px;
+  }
+  #custom-alert {
+    width: 90%;
+    max-height: 85vh;
+  }
+  #alert-content {
+    max-height: calc(85vh - 70px);
+    font-size: 14px;
+    padding: 15px;
+    margin-top: 4px;
+  }
+  #custom-alert .alert-header {
+    padding: 10px 15px;
+  }
+}
+
+/* 强制PC端样式 */
+@media (min-width: 601px) {
+  #coin-box {
+    width: 750px !important;
+    justify-content: center !important;
+  }
+}
