@@ -903,7 +903,8 @@ function triggerJishichengshuang() {
 
   // 弹窗提示（仅本局操作）
   const effectTip = `花-吉事成双效果触发！<br><br>
-  本局钱盒销毁厉币：<b>${destroyLocalLiName}</b><br>`;
+  本局钱盒销毁厉币：<b>${destroyLocalLiName}</b><br>
+  本局钱库销毁厉币：<b>${destroyOuterLiName}</b>`;
 
   renderCoinBox();
   openAlert(effectTip);
