@@ -5,8 +5,8 @@ const coinBox = document.getElementById('coin-box');
 const resultBox = document.getElementById('draw-result');
 const tableBg = document.getElementById('table-bg');
 
-// ===================== 素材配置：背景图+钱币图标图床地址 =====================
-// 钱币图标映射表：key=钱币名称，value=你提供的图床地址（精准对应）
+// ===================== 素材配置：背景图+钱币图标图床地址（精准对应） =====================
+// 钱币图标映射表：key=钱币名称，value=你提供的图床地址
 const COIN_IMAGE_MAP = {
   "衡-尝五味": "https://img.cdn1.vip/i/697767fbc59b7_1769433083.webp",
   "衡-六艺备": "https://img.cdn1.vip/i/697767ff946a5_1769433087.webp",
@@ -41,13 +41,13 @@ const COIN_IMAGE_MAP = {
   "厉-人云亦云": "https://img.cdn1.vip/i/69776805b3656_1769433093.webp"
 };
 
-// 预加载素材清单（背景图+所有钱币图标，自动提取）
+// 预加载素材清单（背景图2张+所有钱币图标，自动提取）
 const PRELOAD_ASSETS = {
   backgrounds: [
-    'https://img.cdn1.vip/i/697766f1ab102_1769432817.png',  // 原10012.jpg
-    'https://img.cdn1.vip/i/697766f199bc5_1769432817.png'   // 原10013.png
+    'https://img.cdn1.vip/i/697766f1ab102_1769432817.png',  // 第一张背景图：页面初始化显示
+    'https://img.cdn1.vip/i/697766f199bc5_1769432817.png'   // 第二张背景图：开始新局时切换
   ],
-  coins: Object.values(COIN_IMAGE_MAP)  // 自动获取所有钱币图床地址，无需手动写
+  coins: Object.values(COIN_IMAGE_MAP)  // 自动获取所有钱币图床地址，无需手动维护
 };
 
 // ===================== 素材预加载函数（提前加载所有图床资源，解决加载慢） =====================
@@ -60,7 +60,7 @@ async function preloadAssets() {
   let total = 0;
   const allAssets = [];
 
-  // 步骤1：加载coins.json获取钱币逻辑数据（图标用图床，此文件仅存业务数据）
+  // 步骤1：加载coins.json获取钱币逻辑数据（仅存业务数据，图标用图床）
   try {
     const res = await fetch('coins.json');
     if (!res.ok) throw new Error('coins.json加载失败');
@@ -76,7 +76,7 @@ async function preloadAssets() {
   allAssets.push(...PRELOAD_ASSETS.coins);
   total = allAssets.length;
 
-  // 步骤3：逐个加载素材，更新进度
+  // 步骤3：逐个加载素材，实时更新进度
   for (const asset of allAssets) {
     try {
       await new Promise((resolve, reject) => {
@@ -91,7 +91,7 @@ async function preloadAssets() {
       loaded++; // 单个素材失败不卡住，继续加载其他
     }
 
-    // 实时更新加载进度条和文字
+    // 更新进度条和文字
     const progress = Math.floor((loaded / total) * 100);
     progressBar.style.width = `${progress}%`;
     progressText.textContent = `${progress}% 完成 (${loaded}/${total})`;
@@ -105,7 +105,7 @@ async function preloadAssets() {
   console.log('✅ 所有图床素材预加载完成！');
 }
 
-// ===================== 弹窗初始化（无修改，保留原有功能） =====================
+// ===================== 自定义弹窗功能（无自动选中文本，保留原有优化） =====================
 function initCustomAlert() {
   const overlay = document.createElement('div');
   overlay.id = 'alert-overlay';
@@ -140,7 +140,7 @@ function closeAlert() {
   overlay.style.display = 'none';
 }
 
-// 打开弹窗（无自动选中文本，保留原有优化）
+// 打开弹窗
 function openAlert(content) {
   const alertBox = document.getElementById('custom-alert');
   const overlay = document.getElementById('alert-overlay');
@@ -168,7 +168,7 @@ async function fetchCoins() {
   }
 }
 
-// ===================== 开始新局（保留原有抽奖逻辑，背景图用图床） =====================
+// ===================== 开始新局（核心逻辑：抽奖规则+切换第二张背景图） =====================
 async function startNewRound() {
   const coins = await fetchCoins();
   
@@ -180,7 +180,7 @@ async function startNewRound() {
   let attempt = 0;
   while (attempt < 1000) {
     attempt++;
-    // 过滤掉指定钱币
+    // 过滤指定钱币
     let tempPool = coins.filter(c => c.name !== '衡-平安喜乐' && c.name !== '厉-误入奇境');
     let selected = [];
 
@@ -204,7 +204,7 @@ async function startNewRound() {
   }
 
   layer = 0;
-  // 背景图使用图床地址（原10013.png）
+  // 切换为第二张背景图（图床地址）
   tableBg.style.backgroundImage = "url('https://img.cdn1.vip/i/697766f199bc5_1769432817.png')";
   renderCoinBox();
   resultBox.innerHTML = `<b>新一局开始！</b> 共抽取 ${roundCoins.length} 枚钱币。`;
@@ -216,11 +216,11 @@ function renderCoinBox() {
   roundCoins.forEach(coin => {
     const coinDiv = document.createElement('div');
     coinDiv.className = 'coin';
-    // 从COIN_IMAGE_MAP获取对应钱币的图床地址，无匹配时提示（防漏配）
+    // 从映射表获取图床地址，无匹配则置空（防漏配）
     const coinImageUrl = COIN_IMAGE_MAP[coin.name] || '';
     coinDiv.style.backgroundImage = coinImageUrl ? `url('${coinImageUrl}')` : 'none';
 
-    // 钱币名称（保留醒目样式：金黄色+加粗+阴影，无重叠）
+    // 钱币名称（醒目无重叠）
     const nameDiv = document.createElement('div');
     nameDiv.className = 'coin-name';
     nameDiv.textContent = coin.name;
@@ -230,7 +230,7 @@ function renderCoinBox() {
   });
 }
 
-// ===================== 钱币转换（转换后重新渲染，自动使用新钱币图床地址） =====================
+// ===================== 钱币转换（转换后重新渲染，自动适配新钱币图床地址） =====================
 function applyNextTransform() {
   roundCoins.forEach((coin, index) => {
     if (coin.nextTransformPending) {
@@ -244,7 +244,7 @@ function applyNextTransform() {
       }
     }
   });
-  renderCoinBox(); // 重新渲染，自动加载新钱币的图床图标
+  renderCoinBox(); // 重新渲染，加载新钱币的图床图标
 }
 
 // ===================== 下一层抽取（保留原有逻辑，高亮效果贴合图床图标） =====================
@@ -258,7 +258,7 @@ function drawThree() {
   applyNextTransform();
   layer++;
 
-  // 随机抽取3枚不同的钱币
+  // 随机抽取3枚不同钱币
   const indices = [];
   while (indices.length < 3 && indices.length < roundCoins.length) {
     const idx = Math.floor(Math.random() * roundCoins.length);
@@ -272,7 +272,7 @@ function drawThree() {
     if (coin.nextTransform) coin.nextTransformPending = true;
   });
 
-  // 给抽取的钱币添加active类（触发贴合贴图的金色光晕高亮）
+  // 添加入active类，触发贴合贴图的金色光晕高亮
   Array.from(coinBox.children).forEach((div, index) => {
     div.classList.remove('active');
     if (drawnCoins.includes(roundCoins[index])) {
@@ -326,15 +326,16 @@ async function showAllCoins() {
   openAlert(effectText);
 }
 
-// ===================== 按钮绑定+页面启动（先预加载，再初始化所有功能） =====================
+// ===================== 按钮绑定+页面核心启动（修复：初始化显示第一张背景图） =====================
 // 绑定按钮点击事件
 document.getElementById('new-round').onclick = startNewRound;
 document.getElementById('next-layer').onclick = drawThree;
 document.getElementById('show-all').onclick = showAllCoins;
 
-// 页面加载完成后，先预加载所有图床素材，再初始化弹窗
+// 页面加载完成后：先预加载→初始化弹窗→显示第一张背景图（核心修复点）
 window.onload = async function() {
-  await preloadAssets();
-  initCustomAlert();
+  await preloadAssets(); // 预加载所有素材
+  initCustomAlert();     // 初始化弹窗
+  // 关键：页面初始化时，设置第一张背景图（解决未加载问题）
+  tableBg.style.backgroundImage = "url('https://img.cdn1.vip/i/697766f1ab102_1769432817.png')";
 };
-
