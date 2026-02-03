@@ -25,7 +25,7 @@ body {
   overflow: hidden;
 }
 
-/* 按钮栏样式 */
+/* 顶部功能按钮栏 */
 .button-bar {
   position: absolute;
   top: 20px;
@@ -57,7 +57,17 @@ button:hover {
   transform: translateY(-2px);
 }
 
-/* 钱币容器：强制一行7个+所有行居中 */
+/* 手动互换按钮样式（3/5层显示） */
+#coin-swap-btn {
+  padding: 8px 20px;
+  font-size: 16px;
+  background: rgba(46, 125, 50, 0.9);
+}
+#coin-swap-btn:hover {
+  background: rgba(51, 141, 56, 0.95);
+}
+
+/* 钱币展示容器（主界面） */
 #coin-box {
   position: absolute;
   top: 50%;
@@ -71,7 +81,6 @@ button:hover {
   z-index: 5;
 }
 
-/* 钱币基础样式 */
 .coin {
   position: relative;
   width: 90px;
@@ -85,7 +94,6 @@ button:hover {
   filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
 }
 
-/* 钱币高亮：贴合贴图轮廓的金色光晕（替代大黄框） */
 .coin.active {
   transform: scale(1.2);
   filter: 
@@ -95,7 +103,6 @@ button:hover {
   box-shadow: none;
 }
 
-/* 钱币名称：醒目+无重叠+适配高亮 */
 .coin-name {
   position: absolute;
   top: 100%;
@@ -152,15 +159,15 @@ h3 {
   font-size: 20px;
 }
 
-/* 自定义弹窗样式 */
+/* 互换弹窗核心样式：弹性布局+底部固定按钮 */
 #custom-alert {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 80%;
-  max-width: 700px;
-  max-height: 80vh;
+  width: 90%;
+  max-width: 1100px;
+  max-height: 85vh;
   background: #fff;
   border: 2px solid #d14949;
   border-radius: 10px;
@@ -169,7 +176,7 @@ h3 {
   display: none;
   overflow: hidden;
   font-family: "Noto Serif SC", serif;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  box-shadow: 0 0 30px rgba(0,0,0,0.7);
 }
 
 #alert-overlay {
@@ -178,47 +185,130 @@ h3 {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.8);
   z-index: 9998;
   display: none;
 }
 
+/* 弹窗头部 */
 #custom-alert .alert-header {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 12px 20px;
+  padding: 15px 20px;
   margin: 0;
   background: #fef0f0;
-  border-bottom: 1px solid #f0c0c0;
+  border-bottom: 2px solid #f0c0c0;
 }
 
 #custom-alert .close-btn {
-  padding: 6px 15px;
+  padding: 8px 20px;
   border: none;
   border-radius: 6px;
   background: #d14949;
   color: #fff;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 #custom-alert .close-btn:hover {
   background: rgba(232, 91, 91, 0.95);
 }
 
+/* 弹窗内容区：可滚动 */
 #alert-content {
-  padding: 20px;
-  margin-top: 4px;
+  flex: 1;
+  padding: 25px;
+  margin-top: 0;
   color: #333;
   font-size: 16px;
-  line-height: 1.6;
-  white-space: pre-line;
-  max-height: calc(80vh - 60px);
+  line-height: 1.8;
+  white-space: normal;
   overflow-y: auto;
+  z-index: 1;
+}
+
+/* 核心：钱币等宽网格布局 - 所有钱币卡片大小完全相同 */
+.coin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 15px;
+  width: 100%;
+}
+
+/* 核心：统一钱币卡片样式 - 固定高度，确保大小一致 */
+.coin-card {
+  padding: 18px;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 200px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+}
+
+/* 互换界面-钱币名称（效果上方，专属样式，醒目） */
+.swap-coin-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #d14949;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* 互换界面-钱币效果（名称下方，专属样式） */
+.swap-coin-effect {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  line-height: 1.5;
+}
+
+/* 互换界面-投出次数（效果下方） */
+.swap-coin-count {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* 互换界面-选择按钮（卡片最底部） */
+.coin-select-btn {
+  padding: 8px 0;
+  font-size: 15px;
+  background: #d14949;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: auto;
+  width: 100%;
+}
+
+.coin-select-btn:hover {
+  background: #c0392b;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 弹窗底部：固定不滚动 */
+#alert-footer {
+  padding: 20px 25px;
+  background: #fef0f0;
+  border-top: 2px solid #f0c0c0;
+  z-index: 2;
 }
 
 /* 移动端适配 */
@@ -251,14 +341,15 @@ h3 {
     gap: 10px;
   }
   #custom-alert {
-    width: 90%;
-    max-height: 85vh;
+    width: 95%;
+    max-height: 90vh;
   }
   #alert-content {
-    max-height: calc(85vh - 60px);
     font-size: 14px;
     padding: 15px;
-    margin-top: 4px;
+  }
+  #alert-footer {
+    padding: 15px;
   }
   #custom-alert .alert-header {
     padding: 10px 15px;
@@ -270,9 +361,32 @@ h3 {
   h3 {
     font-size: 18px;
   }
+  #coin-swap-btn {
+    top: 70px;
+    font-size: 14px;
+    padding: 6px 15px;
+  }
+  /* 移动端等宽卡片适配 */
+  .coin-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  .coin-card {
+    height: 180px;
+    padding: 12px;
+  }
+  .swap-coin-name {
+    font-size: 16px;
+  }
+  .swap-coin-effect {
+    -webkit-line-clamp: 3;
+  }
+  .coin-select-btn {
+    padding: 6px 0;
+    font-size: 14px;
+  }
 }
 
-/* 强制PC端样式，防止移动端样式覆盖 */
+/* 强制PC端样式 */
 @media (min-width: 601px) {
   #coin-box {
     width: 750px !important;
