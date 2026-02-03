@@ -208,20 +208,29 @@ function openAlert(content) {
   clearTimeout(window.alertTimer);
 }
 
-// 3/5层互换核心方法
+// 3/5层互换核心方法 - 适配吉事成双本局外库删币逻辑
 window.selectedOuterCoin = null;
 window.selectedRoundCoinIndex = undefined;
+window.jishiDeleteOuterLi = new Set(); // 吉事成双本局删除的外库厉币集合
 function checkSwapLayer() { return layer === 3 || layer === 5; }
 function hasSwapTarget() {
   if (roundCoins.length === 0 || !Array.isArray(roundCoins)) return false;
   const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
-  const outerCoins = allCoins.filter(c => c?.name && !roundCoinNames.has(c.name) && c.name !== '衡-平安喜乐');
+  const outerCoins = allCoins.filter(c => 
+    c?.name && !roundCoinNames.has(c.name) && 
+    c.name !== '衡-平安喜乐' && 
+    !window.jishiDeleteOuterLi.has(c.name) // 排除吉事成双本局删除的外库厉币
+  );
   return outerCoins.length > 0;
 }
 function getRandomOuterCoins() {
   if (roundCoins.length === 0 || !Array.isArray(roundCoins)) return [];
   const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
-  const outerCoins = allCoins.filter(c => c?.name && !roundCoinNames.has(c.name) && c.name !== '衡-平安喜乐');
+  const outerCoins = allCoins.filter(c => 
+    c?.name && !roundCoinNames.has(c.name) && 
+    c.name !== '衡-平安喜乐' && 
+    !window.jishiDeleteOuterLi.has(c.name) // 排除吉事成双本局删除的外库厉币
+  );
   if (outerCoins.length === 0) return [];
   const shuffled = [...outerCoins].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, 3);
@@ -508,8 +517,9 @@ async function fetchCoins() {
   }
 }
 
-// 开始新局 - 开局无衡-平安喜乐
+// 开始新局 - 开局无衡-平安喜乐（仅修改末尾，其余代码不变）
 async function startNewRound() {
+  // 原有代码全部保留 ↓
   const coins = await fetchCoins();
   if (coins.length === 0) {
     alert('无法开始新局：未加载到钱币数据！');
@@ -546,6 +556,7 @@ async function startNewRound() {
   tableBg.style.backgroundImage = "url('https://img.cdn1.vip/i/697766f199bc5_1769432817.png')";
   renderCoinBox();
   resultBox.innerHTML = `<b>新一局开始！</b> 共抽取 ${roundCoins.length} 枚钱币。`;
+    window.jishiDeleteOuterLi.clear(); // 新局重置吉事成双本局删除的外库厉币标记
   checkPeaceCoinReplace();
 }
 
@@ -838,23 +849,43 @@ function triggerHuodandanxing(huoIndex) {
   openAlert(replaceTip);
 }
 
-// 花-吉事成双 专属效果实现（核心：仅本局生效，不移除外库厉币）
+// 花-吉事成双 专属效果实现（核心：本局钱盒+钱库各删1枚厉币，仅本局生效）
 function triggerJishichengshuang() {
-  // 仅筛选本局（钱盒）所有厉币
+  // 1. 筛选本局钱盒内的厉币
   const localLiCoinIndices = roundCoins.reduce((acc, coin, idx) => {
     if (coin?.name && coin.name.startsWith('厉-')) acc.push(idx);
     return acc;
   }, []);
+  // 2. 筛选本局钱库（外库）的厉币（仅本局排除，新局重置，不影响全局）
+  const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
+  const outerLiCoins = allCoins.filter(c => 
+    c?.name && c.name.startsWith('厉-') && !roundCoinNames.has(c.name)
+  );
 
-  // 兜底：本局无厉币，效果作废
-  if (localLiCoinIndices.length === 0) {
-    openAlert(`❌ 花-吉事成双效果触发失败<br><br>本局钱盒无厉币可销毁，效果作废！`);
+  // 兜底：钱盒/钱库任意一方无厉币，效果直接作废
+  if (localLiCoinIndices.length === 0 || outerLiCoins.length === 0) {
+    const tip = localLiCoinIndices.length === 0 
+      ? '本局钱盒无厉币可销毁' 
+      : '本局钱库（外库）无厉币可销毁';
+    openAlert(`❌ 花-吉事成双效果触发失败<br><br>${tip}，效果作废！`);
     return;
   }
 
-  // 随机选本局1枚厉币处理
+  // 随机选钱盒1枚厉币标记为下次替换平安喜乐（视觉删除，延迟生效）
   const randomLocalLiIndex = shuffleArray([...localLiCoinIndices])[0];
   const destroyLocalLiName = roundCoins[randomLocalLiIndex].name;
+  roundCoins[randomLocalLiIndex] = {
+    name: destroyLocalLiName,
+    count: roundCoins[randomLocalLiIndex].count || 0,
+    nextTransformPending: true,
+    delayPeaceTransform: false,
+    nextTransform: '衡-平安喜乐'
+  };
+
+  // 随机选钱库1枚厉币（仅本局屏蔽，新局恢复，实现本局删除效果）
+  const randomOuterLiCoin = shuffleArray([...outerLiCoins])[0];
+  const destroyOuterLiName = randomOuterLiCoin.name;
+
 
   // 标记该厉币：下次投币自动变换为衡-平安喜乐（延迟生效）
   roundCoins[randomLocalLiIndex] = {
@@ -864,6 +895,11 @@ function triggerJishichengshuang() {
     delayPeaceTransform: false, // 不使用祸不单行的延迟标记
     nextTransform: '衡-平安喜乐' // 强制变换为平安喜乐
   };
+
+
+  // 核心：本局内屏蔽该外库厉币（修改hasSwapTarget/getRandomOuterCoins的筛选逻辑，仅本局生效）
+  window.jishiDeleteOuterLi = window.jishiDeleteOuterLi || new Set();
+  window.jishiDeleteOuterLi.add(destroyOuterLiName);
 
   // 弹窗提示（仅本局操作）
   const effectTip = `花-吉事成双效果触发！<br><br>
@@ -975,7 +1011,7 @@ function shuffleArray(arr) {
   return newArr;
 }
 
-// 页面初始化开始
+// 页面初始化
 window.onload = async function() {
   // 预加载素材→初始化弹窗→基础样式设置
   await preloadAssets();
@@ -985,6 +1021,8 @@ window.onload = async function() {
   document.getElementById('coin-swap-btn').style.display = 'none';
   document.getElementById('custom-alert').style.display = 'none';
   currentLayerActiveIndices = [];
+  // 初始化吉事成双删除标记集合
+  window.jishiDeleteOuterLi = new Set();
 
   // 样式兜底 - 适配放大后的钱币，优化高亮/弹窗/滚动条样式（无max-width限制）
   if (!document.querySelector('.coin-grid-style')) {
@@ -1013,4 +1051,3 @@ window.onload = async function() {
 document.getElementById('new-round').onclick = startNewRound;
 document.getElementById('next-layer').onclick = drawThree;
 document.getElementById('show-all').onclick = showAllCoins;
-// 页面初始化结束
