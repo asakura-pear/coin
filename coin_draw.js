@@ -931,7 +931,7 @@ async function showAllCoins() {
     roundCoinsDetail.forEach((coin, idx) => {
       const currentCoin = roundCoins.find(rc => rc?.name === coin.name);
       const count = currentCoin?.count || 0;
-      const delayTip = currentCoin?.delayPeaceTransform ? '<span style="color:#ff4500;">【祸不单行延迟变换平安喜乐】</span>' : '';
+      const delayTip = currentCoin?.delayPeaceTransform ? '<span style="color:#ff4500;">【下次投币后变成衡-平安喜乐】</span>' : '';
       // 吉事成双待替换标记
       const jishiTip = (currentCoin?.nextTransform === '衡-平安喜乐' && currentCoin?.nextTransformPending) ? '<span style="color:#28a745;">【吉事成双待替换为平安喜乐】</span>' : '';
       effectHtml += `【${coin.name}】：★${coin.effect || '无特殊效果'}（已投出${count}次）${delayTip}${jishiTip}<br><br>`;
