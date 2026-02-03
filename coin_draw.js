@@ -8,7 +8,7 @@ const tableBg = document.getElementById('table-bg');
 // ===================== 素材配置：背景图+钱币图标图床地址 =====================
 // 钱币图标映射表：key=钱币名称，value=你提供的图床地址（精准对应）
 const COIN_IMAGE_MAP = {
-  "衡·尝五味": "https://img.cdn1.vip/i/697767fbc59b7_1769433083.webp",
+  "衡-尝五味": "https://img.cdn1.vip/i/697767fbc59b7_1769433083.webp",
   "衡-六艺备": "https://img.cdn1.vip/i/697767ff946a5_1769433087.webp",
   "花-柒叁柒": "https://img.cdn1.vip/i/697767ff96c66_1769433087.webp",
   "衡-美人相": "https://img.cdn1.vip/i/697767ffa3584_1769433087.webp",
@@ -337,3 +337,4 @@ window.onload = async function() {
   await preloadAssets();
   initCustomAlert();
 };
+
