@@ -1,11 +1,14 @@
 let roundCoins = [];
 let layer = 0;
 let allCoins = [];
+let currentSwapOuterCoins = [];
+let isSwapCompleted = false;
+let currentLayerActiveIndices = [];
 const coinBox = document.getElementById('coin-box');
 const resultBox = document.getElementById('draw-result');
 const tableBg = document.getElementById('table-bg');
 
-// ===================== 素材配置：背景图+钱币图标图床地址（精准对应） =====================
+// 钱币图标映射
 const COIN_IMAGE_MAP = {
   "衡-尝五味": "https://img.cdn1.vip/i/697767fbc59b7_1769433083.webp",
   "衡-六艺备": "https://img.cdn1.vip/i/697767ff946a5_1769433087.webp",
@@ -40,16 +43,16 @@ const COIN_IMAGE_MAP = {
   "厉-人云亦云": "https://img.cdn1.vip/i/69776805b3656_1769433093.webp"
 };
 
-// 预加载素材清单（背景图2张+所有钱币图标）
+// 预加载素材清单
 const PRELOAD_ASSETS = {
   backgrounds: [
-    'https://img.cdn1.vip/i/697766f1ab102_1769432817.png',  // 初始化背景图
-    'https://img.cdn1.vip/i/697766f199bc5_1769432817.png'   // 新局背景图
+    'https://img.cdn1.vip/i/697766f1ab102_1769432817.png',
+    'https://img.cdn1.vip/i/697766f199bc5_1769432817.png'
   ],
   coins: Object.values(COIN_IMAGE_MAP)
 };
 
-// ===================== 素材预加载函数 =====================
+// 素材预加载
 async function preloadAssets() {
   const loadingMask = document.getElementById('loading-mask');
   const progressBar = document.getElementById('loading-progress');
@@ -99,247 +102,400 @@ async function preloadAssets() {
   console.log('✅ 所有图床素材预加载完成！');
 }
 
-// ===================== 自定义弹窗基础功能 =====================
+// 自定义弹窗初始化
 function initCustomAlert() {
+  const swapBtn = document.createElement('button');
+  swapBtn.id = 'coin-swap-btn';
+  swapBtn.textContent = '开启钱币互换';
+  swapBtn.style.position = 'absolute';
+  swapBtn.style.top = '80px';
+  swapBtn.style.left = '50%';
+  swapBtn.style.transform = 'translateX(-50%)';
+  swapBtn.style.zIndex = '998';
+  swapBtn.style.display = 'none';
+  document.body.appendChild(swapBtn);
+
+  swapBtn.onclick = () => {
+    if (checkSwapLayer() && !isSwapCompleted && hasSwapTarget()) {
+      showSwapModal(currentSwapOuterCoins);
+    } else if (!hasSwapTarget()) {
+      openAlert(`❌ 无可用互换目标<br><br>本局或外库无可用钱币，无法进行互换！`);
+    }
+  };
+
   const overlay = document.createElement('div');
   overlay.id = 'alert-overlay';
-  overlay.onclick = closeAlert;
+  overlay.onclick = closeAlertTemporary;
   document.body.appendChild(overlay);
 
   const alertDiv = document.createElement('div');
   alertDiv.id = 'custom-alert';
+  alertDiv.style.display = 'flex';
+  alertDiv.style.flexDirection = 'column';
+  alertDiv.style.height = '100%';
+  alertDiv.style.whiteSpace = 'normal';
+  alertDiv.style.wordBreak = 'break-all';
+  alertDiv.style.padding = '10px 0';
+  document.body.appendChild(alertDiv);
 
   const alertHeader = document.createElement('div');
   alertHeader.className = 'alert-header';
-
+  alertHeader.style.padding = '0 20px 10px';
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-btn';
-  closeBtn.textContent = '关闭';
-  closeBtn.onclick = closeAlert;
+  closeBtn.textContent = '暂时关闭';
+  closeBtn.style.padding = '4px 12px';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.onclick = closeAlertTemporary;
+  alertHeader.appendChild(closeBtn);
+  alertDiv.appendChild(alertHeader);
 
   const alertContent = document.createElement('div');
   alertContent.id = 'alert-content';
-
-  alertHeader.appendChild(closeBtn);
-  alertDiv.appendChild(alertHeader);
+  alertContent.style.lineHeight = '2';
+  alertContent.style.padding = '0 20px';
+  alertContent.style.flex = '1';
+  alertContent.style.overflowY = 'auto';
   alertDiv.appendChild(alertContent);
-  document.body.appendChild(alertDiv);
+
+  const alertFooter = document.createElement('div');
+  alertFooter.id = 'alert-footer';
+  alertFooter.style.padding = '10px 20px';
+  alertDiv.appendChild(alertFooter);
 }
 
-function closeAlert() {
+// 关闭弹窗（临时）
+function closeAlertTemporary() {
   const alertBox = document.getElementById('custom-alert');
   const overlay = document.getElementById('alert-overlay');
+  const swapBtn = document.getElementById('coin-swap-btn');
   alertBox.style.display = 'none';
   overlay.style.display = 'none';
-  // 清空弹窗内容，避免残留
-  document.getElementById('alert-content').innerHTML = '';
+  if (checkSwapLayer() && !isSwapCompleted && hasSwapTarget()) {
+    swapBtn.style.display = 'block';
+  }
 }
 
+// 关闭弹窗（永久，互换完成）
+function closeAlertAndClear() {
+  const alertBox = document.getElementById('custom-alert');
+  const overlay = document.getElementById('alert-overlay');
+  const alertContent = document.getElementById('alert-content');
+  const alertFooter = document.getElementById('alert-footer');
+  const swapBtn = document.getElementById('coin-swap-btn');
+  alertBox.style.display = 'none';
+  overlay.style.display = 'none';
+  swapBtn.style.display = 'none';
+  alertContent.innerHTML = '';
+  alertFooter.innerHTML = '';
+  window.selectedOuterCoin = null;
+  window.selectedRoundCoinIndex = undefined;
+  currentSwapOuterCoins = [];
+  isSwapCompleted = true;
+  checkPeaceCoinReplace();
+}
+
+// 弹窗渲染（innerHTML实现真实换行）
 function openAlert(content) {
   const alertBox = document.getElementById('custom-alert');
   const overlay = document.getElementById('alert-overlay');
   const alertContent = document.getElementById('alert-content');
-  
-  alertContent.textContent = content;
-  alertBox.style.display = 'block';
+  const alertFooter = document.getElementById('alert-footer');
+  alertFooter.innerHTML = '';
+  alertContent.innerHTML = content;
+  alertBox.style.display = 'flex';
   overlay.style.display = 'block';
+  clearTimeout(window.alertTimer);
 }
 
-// ===================== 新增核心：3/5层抽币互换功能 =====================
-/**
- * 检查是否到达互换层数（3/5层）
- * @returns {boolean} 是否触发互换
- */
-function checkSwapLayer() {
-  return layer === 3 || layer === 5;
+// 3/5层互换核心方法
+window.selectedOuterCoin = null;
+window.selectedRoundCoinIndex = undefined;
+function checkSwapLayer() { return layer === 3 || layer === 5; }
+function hasSwapTarget() {
+  if (roundCoins.length === 0 || !Array.isArray(roundCoins)) return false;
+  const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
+  const outerCoins = allCoins.filter(c => c?.name && !roundCoinNames.has(c.name) && c.name !== '衡-平安喜乐');
+  return outerCoins.length > 0;
 }
-
-/**
- * 从全局库抽取3枚本局未拥有的钱币
- * @returns {Array} 抽取的3枚外库钱币
- */
 function getRandomOuterCoins() {
-  // 获取本局钱币名称集合
-  const roundCoinNames = new Set(roundCoins.map(c => c.name));
-  // 过滤出全局库中本局没有的钱币
-  const outerCoins = allCoins.filter(c => !roundCoinNames.has(c.name));
-  // 随机打乱并取前3枚
+  if (roundCoins.length === 0 || !Array.isArray(roundCoins)) return [];
+  const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
+  const outerCoins = allCoins.filter(c => c?.name && !roundCoinNames.has(c.name) && c.name !== '衡-平安喜乐');
+  if (outerCoins.length === 0) return [];
   const shuffled = [...outerCoins].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, 3);
 }
 
-/**
- * 互换弹窗：展示外库3枚钱币，选择本局1枚互换/不换
- * @param {Array} outerCoins 抽取的3枚外库钱币
- */
+// 互换弹窗
 async function showSwapModal(outerCoins) {
+  if (!checkSwapLayer() || isSwapCompleted || !hasSwapTarget() || outerCoins.length === 0 || !Array.isArray(outerCoins)) {
+    openAlert(`❌ 无可用互换目标<br><br>本局或外库无可用钱币，无法进行互换！`);
+    return;
+  }
+  if (roundCoins.length === 0 || !Array.isArray(roundCoins) || roundCoins.every(c => !c?.name)) {
+    openAlert(`❌ 本局无有效钱币<br><br>无法选择互换目标，退出互换！`);
+    return;
+  }
+
   const alertContent = document.getElementById('alert-content');
+  const alertFooter = document.getElementById('alert-footer');
   const alertBox = document.getElementById('custom-alert');
   const overlay = document.getElementById('alert-overlay');
-
-  // 清空弹窗并改为HTML模式
+  const swapBtn = document.getElementById('coin-swap-btn');
+  
+  swapBtn.style.display = 'none';
   alertContent.innerHTML = '';
-  alertContent.style.lineHeight = '1.8';
+  alertFooter.innerHTML = '';
+  window.selectedOuterCoin = null;
+  window.selectedRoundCoinIndex = undefined;
 
-  // 弹窗标题
+  alertContent.style.lineHeight = '1.8';
+  alertBox.style.display = 'flex';
+  overlay.style.display = 'block';
+
+  // 标题
   const title = document.createElement('h3');
-  title.style.color = '#ffd700';
-  title.style.margin = '0 0 15px 0';
+  title.style.color = '#d14949';
+  title.style.margin = '0 0 20px 0';
+  title.style.fontSize = '22px';
   title.textContent = `【${layer}层专属】外库抽币互换`;
   alertContent.appendChild(title);
 
-  // 外库钱币说明
+  // 外库钱币区域
   const tip1 = document.createElement('p');
-  tip1.style.margin = '0 0 10px 0';
-  tip1.innerHTML = '<b>外库抽取3枚钱币（可选1枚互换）：</b>';
+  tip1.style.margin = '0 0 15px 0';
+  tip1.style.fontSize = '16px';
+  tip1.innerHTML = '<b>选择外库1枚钱币进行互换：</b>';
   alertContent.appendChild(tip1);
 
-  // 展示外库3枚钱币（带选择按钮）
   const outerCoinContainer = document.createElement('div');
+  outerCoinContainer.className = 'coin-grid';
   outerCoinContainer.style.display = 'flex';
-  outerCoinContainer.style.gap = '10px';
-  outerCoinContainer.style.margin = '0 0 20px 0';
   outerCoinContainer.style.flexWrap = 'wrap';
+  outerCoinContainer.style.gap = '15px';
+  outerCoinContainer.style.marginBottom = '20px';
   outerCoins.forEach((coin, idx) => {
+    if (!coin?.name) return;
     const coinCard = document.createElement('div');
-    coinCard.style.padding = '8px';
-    coinCard.style.border = '1px solid #eee';
-    coinCard.style.borderRadius = '6px';
-    coinCard.style.textAlign = 'center';
-    coinCard.style.minWidth = '120px';
+    coinCard.className = 'coin-card';
+    coinCard.id = `outer-coin-card-${idx}`;
+    coinCard.style.padding = '10px';
+    coinCard.style.border = '2px solid #eee';
+    coinCard.style.borderRadius = '8px';
+    coinCard.style.minWidth = '200px';
+    coinCard.style.background = '#f8f9fa';
 
-    // 钱币名称
-    const coinName = document.createElement('p');
-    coinName.style.margin = '5px 0';
-    coinName.style.fontSize = '14px';
+    const coinName = document.createElement('div');
+    coinName.style.fontWeight = 'bold';
+    coinName.style.marginBottom = '8px';
     coinName.textContent = coin.name;
-
-    // 选择外库钱币按钮
-    const selectBtn = document.createElement('button');
-    selectBtn.style.padding = '4px 8px';
-    selectBtn.style.fontSize = '12px';
-    selectBtn.textContent = `选择这枚`;
-    selectBtn.onclick = () => selectOuterCoin(coin);
-
     coinCard.appendChild(coinName);
+
+    const coinEffect = document.createElement('div');
+    coinEffect.style.fontSize = '14px';
+    coinEffect.style.marginBottom = '10px';
+    coinEffect.style.color = '#666';
+    coinEffect.textContent = coin.effect || '无特殊效果';
+    coinCard.appendChild(coinEffect);
+
+    const selectBtn = document.createElement('button');
+    selectBtn.style.padding = '4px 12px';
+    selectBtn.style.cursor = 'pointer';
+    selectBtn.style.border = 'none';
+    selectBtn.style.borderRadius = '4px';
+    selectBtn.style.background = '#28a745';
+    selectBtn.style.color = '#fff';
+    selectBtn.textContent = `选择此币`;
+    selectBtn.onclick = () => selectOuterCoin(coin, idx);
     coinCard.appendChild(selectBtn);
+
     outerCoinContainer.appendChild(coinCard);
   });
   alertContent.appendChild(outerCoinContainer);
 
-  // 本局钱币说明
+  // 本局钱币区域
   const tip2 = document.createElement('p');
-  tip2.style.margin = '0 0 10px 0';
-  tip2.innerHTML = '<b>本局钱币（选择1枚互换，点击后完成互换）：</b>';
+  tip2.style.margin = '0 0 15px 0';
+  tip2.style.fontSize = '16px';
+  tip2.innerHTML = '<b>选择本局1枚钱币作为互换目标：</b>';
   alertContent.appendChild(tip2);
 
-  // 存储选中的外库钱币
-  window.selectedOuterCoin = null;
-
-  // 展示本局钱币（带互换按钮）
   const roundCoinContainer = document.createElement('div');
+  roundCoinContainer.className = 'coin-grid';
   roundCoinContainer.style.display = 'flex';
-  roundCoinContainer.style.gap = '10px';
-  roundCoinContainer.style.margin = '0 0 20px 0';
   roundCoinContainer.style.flexWrap = 'wrap';
-  roundCoins.forEach((coin, idx) => {
-    const coinCard = document.createElement('div');
-    coinCard.style.padding = '8px';
-    coinCard.style.border = '1px solid #eee';
-    coinCard.style.borderRadius = '6px';
-    coinCard.style.textAlign = 'center';
-    coinCard.style.minWidth = '120px';
+  roundCoinContainer.style.gap = '15px';
+  const validRoundCoins = roundCoins.filter(c => c?.name);
+  if (validRoundCoins.length === 0) {
+    const emptyTip = document.createElement('div');
+    emptyTip.style.padding = '20px';
+    emptyTip.style.textAlign = 'center';
+    emptyTip.style.color = '#999';
+    emptyTip.textContent = '本局暂无有效钱币可选择';
+    roundCoinContainer.appendChild(emptyTip);
+  } else {
+    validRoundCoins.forEach((coin, idx) => {
+      if (!coin?.name) return;
+      const coinCard = document.createElement('div');
+      coinCard.className = 'coin-card';
+      coinCard.id = `round-coin-card-${idx}`;
+      coinCard.style.padding = '10px';
+      coinCard.style.border = '2px solid #eee';
+      coinCard.style.borderRadius = '8px';
+      coinCard.style.minWidth = '200px';
+      coinCard.style.background = '#f8f9fa';
 
-    // 钱币名称
-    const coinName = document.createElement('p');
-    coinName.style.margin = '5px 0';
-    coinName.style.fontSize = '14px';
-    coinName.textContent = coin.name;
+      const coinName = document.createElement('div');
+      coinName.style.fontWeight = 'bold';
+      coinName.style.marginBottom = '8px';
+      coinName.textContent = coin.name;
+      coinCard.appendChild(coinName);
 
-    // 互换按钮（默认禁用，选中外库钱币后启用）
-    const swapBtn = document.createElement('button');
-    swapBtn.style.padding = '4px 8px';
-    swapBtn.style.fontSize = '12px';
-    swapBtn.textContent = '点击互换';
-    swapBtn.disabled = true;
-    swapBtn.id = `swap-btn-${idx}`;
-    swapBtn.onclick = () => doCoinSwap(coin, idx);
+      const coinEffect = document.createElement('div');
+      coinEffect.style.fontSize = '14px';
+      coinEffect.style.marginBottom = '8px';
+      coinEffect.style.color = '#666';
+      coinEffect.textContent = coin.effect || '无特殊效果';
+      coinCard.appendChild(coinEffect);
 
-    coinCard.appendChild(coinName);
-    coinCard.appendChild(swapBtn);
-    roundCoinContainer.appendChild(coinCard);
-  });
+      const coinCount = document.createElement('div');
+      coinCount.style.fontSize = '12px';
+      coinCount.style.marginBottom = '10px';
+      coinCount.style.color = '#999';
+      coinCount.textContent = `已投出：${coin.count || 0} 次`;
+      coinCard.appendChild(coinCount);
+
+      const selectBtn = document.createElement('button');
+      selectBtn.id = `round-select-btn-${idx}`;
+      selectBtn.style.padding = '4px 12px';
+      selectBtn.style.cursor = 'not-allowed';
+      selectBtn.style.border = 'none';
+      selectBtn.style.borderRadius = '4px';
+      selectBtn.style.background = '#ccc';
+      selectBtn.style.color = '#fff';
+      selectBtn.textContent = `选择此币`;
+      selectBtn.disabled = true;
+      selectBtn.onclick = () => selectRoundCoin(idx);
+      coinCard.appendChild(selectBtn);
+
+      roundCoinContainer.appendChild(coinCard);
+    });
+  }
   alertContent.appendChild(roundCoinContainer);
 
-  // 不换按钮
-  const noSwapBtn = document.createElement('button');
-  noSwapBtn.style.padding = '8px 20px';
-  noSwapBtn.style.marginTop = '10px';
-  noSwapBtn.textContent = '不更换，继续游戏';
-  noSwapBtn.onclick = () => {
-    closeAlert();
-    // 不换则直接继续，无需更新渲染
-  };
-  alertContent.appendChild(noSwapBtn);
+  // 底部按钮
+  const btnContainer = document.createElement('div');
+  btnContainer.style.display = 'flex';
+  btnContainer.style.gap = '15px';
+  btnContainer.style.marginTop = '30px';
+  btnContainer.style.justifyContent = 'center';
 
-  // 显示弹窗
-  alertBox.style.display = 'block';
-  overlay.style.display = 'block';
+  const confirmBtn = document.createElement('button');
+  confirmBtn.id = 'swap-confirm-btn';
+  confirmBtn.textContent = '确定互换';
+  confirmBtn.style.padding = '8px 24px';
+  confirmBtn.style.fontSize = '16px';
+  confirmBtn.style.cursor = 'not-allowed';
+  confirmBtn.style.border = 'none';
+  confirmBtn.style.borderRadius = '8px';
+  confirmBtn.style.background = '#ccc';
+  confirmBtn.style.color = '#fff';
+  confirmBtn.disabled = true;
+  confirmBtn.onclick = doCoinSwap;
+
+  const noSwapBtn = document.createElement('button');
+  noSwapBtn.textContent = '不更换，继续游戏';
+  noSwapBtn.style.padding = '8px 24px';
+  noSwapBtn.style.fontSize = '16px';
+  noSwapBtn.style.cursor = 'pointer';
+  noSwapBtn.style.border = 'none';
+  noSwapBtn.style.borderRadius = '8px';
+  noSwapBtn.style.background = '#17a2b8';
+  noSwapBtn.style.color = '#fff';
+  noSwapBtn.onclick = () => {
+    closeAlertAndClear();
+    openAlert(`已放弃${layer}层替换机会`);
+  };
+
+  btnContainer.appendChild(confirmBtn);
+  btnContainer.appendChild(noSwapBtn);
+  alertFooter.appendChild(btnContainer);
 }
 
-/**
- * 选择外库钱币，启用本局钱币的互换按钮
- * @param {Object} outerCoin 选中的外库钱币
- */
-function selectOuterCoin(outerCoin) {
+// 选择外库钱币
+function selectOuterCoin(outerCoin, cardIndex) {
+  if (!outerCoin?.name) return;
   window.selectedOuterCoin = outerCoin;
-  // 启用所有本局钱币的互换按钮
-  document.querySelectorAll('[id^="swap-btn-"]').forEach(btn => {
+  document.querySelectorAll('.coin-card').forEach(card => {
+    card.style.border = '2px solid #eee';
+    card.style.background = '#f8f9fa';
+  });
+  const targetCard = document.getElementById(`outer-coin-card-${cardIndex}`);
+  if (targetCard) {
+    targetCard.style.border = '2px solid #28a745';
+    targetCard.style.background = '#e8f5e9';
+  }
+  document.querySelectorAll('[id^="round-select-btn-"]').forEach(btn => {
     btn.disabled = false;
     btn.style.background = '#28a745';
-    btn.style.color = '#fff';
+    btn.style.cursor = 'pointer';
   });
-  // 弹窗提示
-  const tip = document.createElement('p');
-  tip.style.color = '#28a745';
-  tip.style.margin = '5px 0 0 0';
-  tip.textContent = `已选中【${outerCoin.name}】，请选择本局1枚钱币完成互换！`;
-  document.getElementById('alert-content').appendChild(tip);
+  window.selectedRoundCoinIndex = undefined;
+  const confirmBtn = document.getElementById('swap-confirm-btn');
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.style.background = '#ccc';
+    confirmBtn.style.cursor = 'not-allowed';
+  }
 }
 
-/**
- * 执行钱币互换：外库钱币 ↔ 本局钱币
- * @param {Object} roundCoin 本局选中的钱币
- * @param {number} index 本局钱币的索引
- */
-function doCoinSwap(roundCoin, index) {
-  const selectedOuter = window.selectedOuterCoin;
-  if (!selectedOuter) return;
+// 选择本局钱币
+function selectRoundCoin(idx) {
+  window.selectedRoundCoinIndex = idx;
+  document.querySelectorAll('[id^="round-coin-card-"]').forEach(card => {
+    card.style.border = '2px solid #eee';
+    card.style.background = '#f8f9fa';
+  });
+  const targetCard = document.getElementById(`round-coin-card-${idx}`);
+  if (targetCard) {
+    targetCard.style.border = '2px solid #ff7f50';
+    targetCard.style.background = '#fff3e0';
+  }
+  const confirmBtn = document.getElementById('swap-confirm-btn');
+  if (confirmBtn) {
+    confirmBtn.disabled = false;
+    confirmBtn.style.background = '#28a745';
+    confirmBtn.style.cursor = 'pointer';
+  }
+}
 
-  // 替换本局指定索引的钱币，保留计数相关属性
-  roundCoins[index] = {
+// 执行互换
+function doCoinSwap() {
+  const selectedOuter = window.selectedOuterCoin;
+  const selectedRoundIndex = window.selectedRoundCoinIndex;
+  if (!selectedOuter?.name || selectedRoundIndex === undefined || isNaN(selectedRoundIndex) || !roundCoins[selectedRoundIndex]?.name) {
+    openAlert(`❌ 互换失败<br><br>未选择有效互换目标，请重新操作！`);
+    return;
+  }
+
+  const selectedRoundCoin = roundCoins[selectedRoundIndex];
+  roundCoins[selectedRoundIndex] = {
     ...selectedOuter,
-    count: roundCoin.count || 0,
-    nextTransformPending: roundCoin.nextTransformPending || false
+    count: selectedRoundCoin.count || 0,
+    nextTransformPending: selectedRoundCoin.nextTransformPending || false,
+    delayPeaceTransform: selectedRoundCoin.delayPeaceTransform || false
   };
 
-  // 关闭弹窗并提示
-  closeAlert();
-  openAlert(`互换成功！\n外库【${selectedOuter.name}】↔ 本局【${roundCoin.name}】`);
-  // 3秒后关闭提示弹窗，重新渲染钱币
-  setTimeout(() => {
-    closeAlert();
-    renderCoinBox();
-  }, 3000);
-
-  // 清空选中的外库钱币
-  window.selectedOuterCoin = null;
+  closeAlertAndClear();
+  renderCoinBox();
+  openAlert(`替换成功！<br><br>【${selectedOuter.name}】→ 【${selectedRoundCoin.name}】`);
+  window.selectedRoundCoinIndex = undefined;
 }
 
-// ===================== 钱币数据获取 =====================
+// 基础功能：获取钱币数据
 async function fetchCoins() {
   if (allCoins.length > 0) return allCoins;
-  
   try {
     const res = await fetch('coins.json');
     if (!res.ok) throw new Error(`请求失败：${res.status}`);
@@ -352,10 +508,9 @@ async function fetchCoins() {
   }
 }
 
-// ===================== 开始新局 =====================
+// 开始新局 - 开局无衡-平安喜乐
 async function startNewRound() {
   const coins = await fetchCoins();
-  
   if (coins.length === 0) {
     alert('无法开始新局：未加载到钱币数据！');
     return;
@@ -364,20 +519,19 @@ async function startNewRound() {
   let attempt = 0;
   while (attempt < 1000) {
     attempt++;
-    let tempPool = coins.filter(c => c.name !== '衡-平安喜乐' && c.name !== '厉-误入奇境');
+    // 过滤衡-平安喜乐，开局绝对抽不到
+    let tempPool = coins.filter(c => c?.name && c.name !== '衡-平安喜乐');
     let selected = [];
-
     while (selected.length < 10 && tempPool.length) {
       const idx = Math.floor(Math.random() * tempPool.length);
       const coin = JSON.parse(JSON.stringify(tempPool.splice(idx, 1)[0]));
       coin.count = 0;
       coin.nextTransformPending = false;
+      coin.delayPeaceTransform = false;
       selected.push(coin);
     }
-
-    const numLi = selected.filter(c => c.name.startsWith('厉-')).length;
-    const conflictCount = selected.filter(c => ['厉-守财奴', '厉-兵行险着'].includes(c.name)).length;
-    
+    const numLi = selected.filter(c => c?.name && c.name.startsWith('厉-')).length;
+    const conflictCount = selected.filter(c => ['厉-守财奴', '厉-兵行险着'].includes(c?.name || '')).length;
     if (numLi >= 6 && conflictCount <= 1) {
       roundCoins = selected;
       break;
@@ -385,141 +539,478 @@ async function startNewRound() {
   }
 
   layer = 0;
+  isSwapCompleted = false;
+  currentSwapOuterCoins = [];
+  currentLayerActiveIndices = [];
+  document.getElementById('coin-swap-btn').style.display = 'none';
   tableBg.style.backgroundImage = "url('https://img.cdn1.vip/i/697766f199bc5_1769432817.png')";
   renderCoinBox();
   resultBox.innerHTML = `<b>新一局开始！</b> 共抽取 ${roundCoins.length} 枚钱币。`;
+  checkPeaceCoinReplace();
 }
 
-// ===================== 渲染钱币 =====================
+// 渲染钱币 - 核心：第一行7枚、第二行3枚固定排布
 function renderCoinBox() {
   coinBox.innerHTML = "";
-  roundCoins.forEach(coin => {
-    const coinDiv = document.createElement('div');
-    coinDiv.className = 'coin';
-    const coinImageUrl = COIN_IMAGE_MAP[coin.name] || '';
-    coinDiv.style.backgroundImage = coinImageUrl ? `url('${coinImageUrl}')` : 'none';
+  // 设置钱币容器为纵向弹性布局，手动分两行
+  coinBox.style.display = 'flex';
+  coinBox.style.flexDirection = 'column';
+  coinBox.style.alignItems = 'center';
+  coinBox.style.gap = '25px'; // 适配大钱币，增大行间距
+  coinBox.style.padding = '20px 0'; // 增加容器上下内边距，防止溢出
 
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'coin-name';
-    nameDiv.textContent = coin.name;
+  if (roundCoins.length === 0 || !Array.isArray(roundCoins)) return;
 
-    coinDiv.appendChild(nameDiv);
-    coinBox.appendChild(coinDiv);
+  // 强制分两组：第一行0-6（7枚）、第二行7-9（3枚）
+  const firstRowCoins = roundCoins.slice(0, 7);
+  const secondRowCoins = roundCoins.slice(7, 10);
+
+  // 创建第一行容器（横向排列7枚）
+  const firstRow = document.createElement('div');
+  firstRow.style.display = 'flex';
+  firstRow.style.gap = '20px'; // 适配大钱币，增大钱币横向间距
+  firstRowCoins.forEach((coin, index) => {
+    if (!coin?.name) return;
+    const coinDiv = createCoinElement(coin, 0 + index);
+    firstRow.appendChild(coinDiv);
   });
+  coinBox.appendChild(firstRow);
+
+  // 创建第二行容器（横向排列3枚）
+  const secondRow = document.createElement('div');
+  secondRow.style.display = 'flex';
+  secondRow.style.gap = '20px'; // 适配大钱币，增大钱币横向间距
+  secondRowCoins.forEach((coin, index) => {
+    if (!coin?.name) return;
+    const coinDiv = createCoinElement(coin, 7 + index);
+    secondRow.appendChild(coinDiv);
+  });
+  coinBox.appendChild(secondRow);
 }
 
-// ===================== 钱币转换 =====================
+// 封装钱币元素创建方法 - 核心：放大图标+名称（100px尺寸+14px加粗名称）
+function createCoinElement(coin, index) {
+  const coinDiv = document.createElement('div');
+  coinDiv.className = 'coin';
+  // 投出高亮样式 + 延迟变换厉币的橙红色阴影
+  if (currentLayerActiveIndices.includes(index)) {
+    coinDiv.classList.add('active');
+  }
+  if (coin.delayPeaceTransform) {
+    coinDiv.style.boxShadow = '0 0 25px #ff4500'; // 适配大钱币，放大阴影
+  }
+  // 钱币核心样式 - 放大至100px（原80px），加粗边框
+  coinDiv.style.width = '100px';
+  coinDiv.style.height = '100px';
+  coinDiv.style.borderRadius = '50%';
+  coinDiv.style.display = 'inline-flex';
+  coinDiv.style.alignItems = 'center';
+  coinDiv.style.justifyContent = 'center';
+  coinDiv.style.border = '3px solid #333'; // 加粗边框，适配大钱币
+  coinDiv.style.color = '#fff';
+  coinDiv.style.fontWeight = 'bold';
+  coinDiv.style.textShadow = '2px 2px 3px #000'; // 加深文字阴影，更清晰
+  coinDiv.style.transition = 'all 0.3s ease';
+  coinDiv.style.cursor = 'pointer'; // 增加鼠标悬浮指针，提升交互
+
+  // 加载钱币背景图 - 保证图片铺满整个大钱币
+  const coinImageUrl = COIN_IMAGE_MAP[coin.name] || '';
+  if (coinImageUrl) {
+    coinDiv.style.backgroundImage = `url('${coinImageUrl}')`;
+    coinDiv.style.backgroundSize = '100% 100%'; // 精准铺满100px容器
+    coinDiv.style.backgroundPosition = 'center';
+    coinDiv.style.backgroundRepeat = 'no-repeat';
+  }
+
+  // 钱币名称 - 放大至14px+加粗（原12px），适配大钱币
+  const nameDiv = document.createElement('div');
+  nameDiv.className = 'coin-name';
+  nameDiv.style.fontSize = '14px'; // 放大字体
+  nameDiv.style.fontWeight = '900'; // 加粗，更醒目
+  nameDiv.style.textAlign = 'center';
+  nameDiv.style.lineHeight = '1.2'; // 紧凑行高，防止名称换行溢出
+  nameDiv.style.padding = '0 5px'; // 增加左右内边距，防止文字贴边
+  nameDiv.textContent = coin.name;
+  coinDiv.appendChild(nameDiv);
+
+  return coinDiv;
+}
+
+// 钱币变换 - 兼容延迟变换为平安喜乐的规则
 function applyNextTransform() {
+  if (roundCoins.length === 0 || !Array.isArray(roundCoins)) return;
   roundCoins.forEach((coin, index) => {
-    if (coin.nextTransformPending) {
-      const newCoin = allCoins.find(c => c.name === coin.nextTransform);
-      if (newCoin) {
-        Object.assign(roundCoins[index], JSON.parse(JSON.stringify(newCoin)), {
-          count: coin.count,
-          nextTransformPending: false
-        });
-      }
+    if (!coin?.name || !coin.nextTransformPending) return;
+
+    // 延迟变换：仅清除标记，本次不变换（祸不单行新厉币专用）
+    if (coin.delayPeaceTransform) {
+      coin.delayPeaceTransform = false;
+      coin.nextTransformPending = false;
+      renderCoinBox();
+      return;
+    }
+
+    // 正常变换逻辑（含吉事成双的平安喜乐变换）
+    const newCoin = allCoins.find(c => c?.name === coin.nextTransform);
+    if (newCoin) {
+      Object.assign(roundCoins[index], JSON.parse(JSON.stringify(newCoin)), {
+        count: coin.count,
+        nextTransformPending: false,
+        delayPeaceTransform: false
+      });
     }
   });
   renderCoinBox();
 }
 
-// ===================== 下一层抽取（整合互换功能） =====================
+// 抽层逻辑 - 触发厉-祸不单行、花-吉事成双效果
 function drawThree() {
-  if (roundCoins.length === 0) {
+  if (roundCoins.length === 0 || !Array.isArray(roundCoins)) {
     alert("请先点击「开始新局」按钮！");
     return;
   }
 
-  // 先执行钱币转换
   applyNextTransform();
   layer++;
 
-  // 随机抽取3枚本局钱币
-  const indices = [];
-  while (indices.length < 3 && indices.length < roundCoins.length) {
-    const idx = Math.floor(Math.random() * roundCoins.length);
-    if (!indices.includes(idx)) indices.push(idx);
+  const currentLayerDrawnIndices = [];
+  const validIndices = roundCoins.map((c, i) => c?.name ? i : -1).filter(i => i !== -1);
+  while (currentLayerDrawnIndices.length < 3 && currentLayerDrawnIndices.length < validIndices.length) {
+    const randomIdx = Math.floor(Math.random() * validIndices.length);
+    const idx = validIndices[randomIdx];
+    if (!currentLayerDrawnIndices.includes(idx)) currentLayerDrawnIndices.push(idx);
   }
 
-  // 更新抽取钱币的计数和转换标记
-  const drawnCoins = indices.map(i => roundCoins[i]);
-  drawnCoins.forEach(coin => {
-    coin.count = (coin.count || 0) + 1;
-    if (coin.nextTransform) coin.nextTransformPending = true;
-  });
-
-  // 高亮抽取的钱币
-  Array.from(coinBox.children).forEach((div, index) => {
-    div.classList.remove('active');
-    if (drawnCoins.includes(roundCoins[index])) {
-      div.classList.add('active');
+  currentLayerActiveIndices = currentLayerDrawnIndices;
+  const drawnCoins = currentLayerDrawnIndices.map(i => roundCoins[i]);
+  // 标记效果是否触发，避免重复弹窗
+  let isHuodandanxingTriggered = false;
+  let isJishichengshuangTriggered = false;
+  
+  drawnCoins.forEach((coin, i) => {
+    if (coin?.name) {
+      coin.count = (coin.count || 0) + 1;
+      if (coin?.nextTransform) coin.nextTransformPending = true;
+      // 触发厉-祸不单行效果
+      if (coin.name === '厉-祸不单行' && !isHuodandanxingTriggered) {
+        isHuodandanxingTriggered = true;
+        triggerHuodandanxing(currentLayerDrawnIndices[i]);
+      }
+      // 触发花-吉事成双效果（仅本局生效）
+      if (coin.name === '花-吉事成双' && !isJishichengshuangTriggered) {
+        isJishichengshuangTriggered = true;
+        triggerJishichengshuang();
+      }
     }
   });
 
-  // 渲染抽取结果
+  renderCoinBox();
   resultBox.innerHTML = `<h3>第 ${layer} 层抽取结果：</h3>`;
   drawnCoins.forEach(coin => {
+    if (!coin?.name) return;
     const effectDiv = document.createElement('div');
     effectDiv.className = 'effect';
-    let effectText = coin.effect;
-    if (effectText.includes('已投出0次')) {
-      effectText = effectText.replace(/已投出0次/, `已投出${coin.count}次`);
+    let effectText = coin.effect || '无特殊效果';
+    if (effectText.includes('已投出')) {
+      effectText = effectText.replace(/已投出\d+次/, `已投出${coin.count}次`);
+    }
+    // 祸不单行效果说明
+    if (coin.name === '厉-祸不单行') {
+      effectText += '<br><span style="color:#d14949;"></span>';
+    }
+    // 吉事成双效果说明（仅本局）
+    if (coin.name === '花-吉事成双') {
+      effectText += '<br><span style="color:#28a745;"></span>';
     }
     effectDiv.innerHTML = `<b>${coin.name}</b>：${effectText}`;
     resultBox.appendChild(effectDiv);
   });
 
-  // 新增：检查是否到达3/5层，触发抽币互换
-  if (checkSwapLayer()) {
+  checkPeaceCoinReplace();
+
+  // 互换按钮显隐控制
+  const swapBtn = document.getElementById('coin-swap-btn');
+  swapBtn.style.display = 'none';
+  if (checkSwapLayer() && !isSwapCompleted && hasSwapTarget()) {
     const outerCoins = getRandomOuterCoins();
-    // 若外库无钱币（极端情况），提示并跳过
-    if (outerCoins.length === 0) {
-      openAlert(`已到${layer}层，但无外库钱币可抽取，继续游戏！`);
-      setTimeout(closeAlert, 2000);
-      return;
+    if (outerCoins.length > 0) {
+      currentSwapOuterCoins = outerCoins;
+      swapBtn.style.display = 'block';
+    } else {
+      openAlert(`❌ ${layer}层无可用外库钱币<br><br>无法进行钱币互换，继续游戏！`);
+      isSwapCompleted = true;
     }
-    showSwapModal(outerCoins);
+  } else if (checkSwapLayer() && !isSwapCompleted && !hasSwapTarget()) {
+    openAlert(`❌ ${layer}层无可用互换目标<br><br>本局或外库无可用钱币，无法互换！`);
+    isSwapCompleted = true;
+  } else {
+    isSwapCompleted = false;
+    currentSwapOuterCoins = [];
   }
 }
 
-// ===================== 查看所有钱币效果 =====================
-async function showAllCoins() {
-  const coins = await fetchCoins();
+// 厉-祸不单行 专属效果核心实现
+function triggerHuodandanxing(huoIndex) {
+  if (!roundCoins[huoIndex] || roundCoins[huoIndex].name !== '厉-祸不单行') return;
 
-  if (!coins || coins.length === 0) {
-    alert('暂无钱币数据！');
+  // 筛选本局非厉系钱币
+  const nonLiCoinIndices = roundCoins.reduce((acc, coin, idx) => {
+    if (coin?.name && !coin.name.startsWith('厉-') && idx !== huoIndex) {
+      acc.push(idx);
+    }
+    return acc;
+  }, []);
+
+  // 兜底：无可用非厉币
+  if (nonLiCoinIndices.length === 0) {
+    const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
+    const newLiCandidates = allCoins.filter(c => 
+      c?.name && c.name.startsWith('厉-') && 
+      !roundCoinNames.has(c.name) && 
+      c.name !== '厉-祸不单行' &&
+      c.name !== '衡-平安喜乐'
+    );
+    if (newLiCandidates.length === 0) {
+      openAlert(`❌ 厉-祸不单行效果触发失败<br><br>外库无可用新厉系钱币，效果作废！`);
+      return;
+    }
+    const randomNewLiCoin = shuffleArray([...newLiCandidates])[0];
+    roundCoins[huoIndex] = {
+      ...randomNewLiCoin,
+      count: roundCoins[huoIndex].count || 0,
+      nextTransformPending: false,
+      delayPeaceTransform: true
+    };
+    renderCoinBox();
+    openAlert(`厉-祸不单行效果触发<br><br>厉-祸不单行→${randomNewLiCoin.name}<br><br>`);
     return;
   }
 
-  const roundCoinNames = roundCoins.map(c => c.name);
-  const roundCoinsDetail = coins.filter(c => roundCoinNames.includes(c.name));
-  const otherCoins = coins.filter(c => !roundCoinNames.includes(c.name));
+  // 随机选1枚非厉币
+  const randomNonLiIndex = shuffleArray([...nonLiCoinIndices])[0];
+  const randomNonLiCoin = roundCoins[randomNonLiIndex];
 
-  let effectText = '';
-  if (roundCoinsDetail.length > 0) {
-    effectText += '【本局抽到的钱币】\n\n';
-    roundCoinsDetail.forEach(coin => {
-      effectText += `【${coin.name}】：★${coin.effect || '无效果说明'}\n\n`;
-    });
-    effectText += '————————————————\n\n';
+  // 筛选新厉币候选池
+  const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
+  const newLiCandidates = allCoins.filter(c => 
+    c?.name && c.name.startsWith('厉-') && 
+    !roundCoinNames.has(c.name) && 
+    c.name !== '厉-祸不单行' &&
+    c.name !== randomNonLiCoin.name &&
+    c.name !== '衡-平安喜乐'
+  );
+
+  const replaceNum = Math.min(2, newLiCandidates.length);
+  if (replaceNum === 0) {
+    openAlert(`❌ 厉-祸不单行效果触发失败<br><br>外库无可用新厉系钱币，效果作废！`);
+    return;
   }
-  effectText += '【其他钱币】\n\n';
-  otherCoins.forEach(coin => {
-    effectText += `${coin.name}：${coin.effect || '无效果说明'}\n\n`;
-  });
+  const randomNewLiCoins = shuffleArray([...newLiCandidates]).slice(0, replaceNum);
 
-  openAlert(effectText);
+  // 执行替换
+  let replaceTip = `厉-祸不单行效果触发！<br><br>`;
+  // 替换本币
+  roundCoins[huoIndex] = {
+    ...randomNewLiCoins[0],
+    count: roundCoins[huoIndex].count || 0,
+    nextTransformPending: false,
+    delayPeaceTransform: true
+  };
+  replaceTip += `厉-祸不单行→${randomNewLiCoins[0].name}<br>`;
+
+  // 替换非厉币（若有）
+  if (replaceNum >= 2) {
+    roundCoins[randomNonLiIndex] = {
+      ...randomNewLiCoins[1],
+      count: randomNonLiCoin.count || 0,
+      nextTransformPending: false,
+      delayPeaceTransform: true
+    };
+    replaceTip += `${randomNonLiCoin.name}→${randomNewLiCoins[1].name}<br>`;
+  }
+
+  // 补充提示
+  replaceTip += `<br>`;
+  if (replaceNum === 1) {
+    replaceTip += `<br><br>⚠️ 外库仅1枚可用新厉币，未替换非厉币！`;
+  }
+  renderCoinBox();
+  openAlert(replaceTip);
 }
 
-// ===================== 按钮绑定+页面启动 =====================
-document.getElementById('new-round').onclick = startNewRound;
-document.getElementById('next-layer').onclick = drawThree;
-document.getElementById('show-all').onclick = showAllCoins;
+// 花-吉事成双 专属效果实现（核心：仅本局生效，不移除外库厉币）
+function triggerJishichengshuang() {
+  // 仅筛选本局（钱盒）所有厉币
+  const localLiCoinIndices = roundCoins.reduce((acc, coin, idx) => {
+    if (coin?.name && coin.name.startsWith('厉-')) acc.push(idx);
+    return acc;
+  }, []);
 
+  // 兜底：本局无厉币，效果作废
+  if (localLiCoinIndices.length === 0) {
+    openAlert(`❌ 花-吉事成双效果触发失败<br><br>本局钱盒无厉币可销毁，效果作废！`);
+    return;
+  }
+
+  // 随机选本局1枚厉币处理
+  const randomLocalLiIndex = shuffleArray([...localLiCoinIndices])[0];
+  const destroyLocalLiName = roundCoins[randomLocalLiIndex].name;
+
+  // 标记该厉币：下次投币自动变换为衡-平安喜乐（延迟生效）
+  roundCoins[randomLocalLiIndex] = {
+    name: destroyLocalLiName, // 临时保留原名称，视觉无感知
+    count: roundCoins[randomLocalLiIndex].count || 0, // 保留投出次数
+    nextTransformPending: true, // 标记下次投币执行变换
+    delayPeaceTransform: false, // 不使用祸不单行的延迟标记
+    nextTransform: '衡-平安喜乐' // 强制变换为平安喜乐
+  };
+
+  // 弹窗提示（仅本局操作）
+  const effectTip = `花-吉事成双效果触发！<br><br>
+  本局钱盒销毁厉币：<b>${destroyLocalLiName}</b><br>`;
+
+  renderCoinBox();
+  openAlert(effectTip);
+}
+
+// 查看所有钱币（含吉事成双待替换标记）
+async function showAllCoins() {
+  const coins = await fetchCoins();
+  if (coins.length === 0) {
+    openAlert('暂无钱币数据！');
+    return;
+  }
+  if (roundCoins.length === 0 || !Array.isArray(roundCoins)) {
+    openAlert('本局暂无钱币！<br><br>请先开始新局抽取钱币！');
+    return;
+  }
+  const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
+  const roundCoinsDetail = roundCoins.filter(c => c?.name).map(rc => coins.find(c => c?.name === rc.name)).filter(Boolean);
+  const otherCoins = allCoins.filter(c => c?.name && !roundCoinNames.has(c.name)).sort((a, b) => a.name.localeCompare(b.name));
+
+  let effectHtml = '';
+  effectHtml += '<strong>【本局抽到的钱币】</strong><br>';
+  if (roundCoinsDetail.length > 0) {
+    roundCoinsDetail.forEach((coin, idx) => {
+      const currentCoin = roundCoins.find(rc => rc?.name === coin.name);
+      const count = currentCoin?.count || 0;
+      const delayTip = currentCoin?.delayPeaceTransform ? '<span style="color:#ff4500;">【祸不单行延迟变换平安喜乐】</span>' : '';
+      // 吉事成双待替换标记
+      const jishiTip = (currentCoin?.nextTransform === '衡-平安喜乐' && currentCoin?.nextTransformPending) ? '<span style="color:#28a745;">【吉事成双待替换为平安喜乐】</span>' : '';
+      effectHtml += `【${coin.name}】：★${coin.effect || '无特殊效果'}（已投出${count}次）${delayTip}${jishiTip}。<br><br>`;
+    });
+  } else {
+    effectHtml += '本局暂无有效钱币<br><br>';
+  }
+
+  effectHtml += '————————————————<br><br>';
+  effectHtml += '<strong>【其他钱币（外库）】</strong><br>';
+  if (otherCoins.length > 0) {
+    otherCoins.forEach(coin => {
+      effectHtml += `${coin.name}：${coin.effect || '无特殊效果'}。<br><br>`;
+    });
+  } else {
+    effectHtml += '外库暂无可用钱币<br><br>';
+  }
+
+  openAlert(effectHtml);
+}
+
+// 衡-平安喜乐自动替换（≥3枚时触发，逐条展示替换信息）
+function checkPeaceCoinReplace() {
+  if (roundCoins.length === 0 || !Array.isArray(roundCoins) || allCoins.length === 0) return;
+
+  const peaceCoinInfo = roundCoins.reduce((acc, coin, idx) => {
+    if (coin?.name === '衡-平安喜乐') {
+      acc.count++;
+      acc.indices.push(idx);
+    }
+    return acc;
+  }, { count: 0, indices: [] });
+
+  if (peaceCoinInfo.count < 3) return;
+
+  const roundCoinNames = new Set(roundCoins.map(c => c?.name || ''));
+  const replaceCandidates = allCoins.filter(c => c?.name && !roundCoinNames.has(c.name) && c.name !== '衡-平安喜乐');
+  
+  const replaceNum = Math.min(3, replaceCandidates.length, peaceCoinInfo.indices.length);
+  if (replaceNum === 0) {
+    openAlert(`⚠️ 衡-平安喜乐达${peaceCoinInfo.count}枚，但外库无可用替换钱币<br><br>保留所有平安喜乐！`);
+    return;
+  }
+
+  const randomPeaceIndices = shuffleArray([...peaceCoinInfo.indices]).slice(0, replaceNum);
+  const randomReplaceCoins = shuffleArray([...replaceCandidates]).slice(0, replaceNum);
+
+  // 逐条拼接替换信息
+  let replaceTip = `衡-平安喜乐替换<br><br>`;
+  randomReplaceCoins.forEach(coin => {
+    replaceTip += `衡-平安喜乐→${coin.name}<br>`;
+  });
+  const remainPeaceNum = peaceCoinInfo.count - replaceNum;
+  replaceTip += `<br>替换后剩余${remainPeaceNum}枚衡-平安喜乐`;
+
+  // 执行替换
+  randomPeaceIndices.forEach((peaceIdx, i) => {
+    const originalCoin = roundCoins[peaceIdx];
+    roundCoins[peaceIdx] = {
+      ...randomReplaceCoins[i],
+      count: originalCoin.count || 0,
+      nextTransformPending: originalCoin.nextTransformPending || false,
+      delayPeaceTransform: originalCoin.delayPeaceTransform || false
+    };
+  });
+
+  renderCoinBox();
+  openAlert(replaceTip);
+}
+
+// 数组随机打乱（Fisher-Yates洗牌算法，保证随机性）
+function shuffleArray(arr) {
+  const newArr = [...arr];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+}
+
+// 页面初始化开始
 window.onload = async function() {
+  // 预加载素材→初始化弹窗→基础样式设置
   await preloadAssets();
   initCustomAlert();
   tableBg.style.backgroundImage = "url('https://img.cdn1.vip/i/697766f1ab102_1769432817.png')";
+  // 初始化隐藏核心控件
+  document.getElementById('coin-swap-btn').style.display = 'none';
+  document.getElementById('custom-alert').style.display = 'none';
+  currentLayerActiveIndices = [];
+
+  // 样式兜底 - 适配放大后的钱币，优化高亮/弹窗/滚动条样式（无max-width限制）
+  if (!document.querySelector('.coin-grid-style')) {
+    const style = document.createElement('style');
+    style.className = 'coin-grid-style';
+    style.textContent = `
+      /* 钱币投出高亮：适配100px大钱币，放大阴影更醒目 */
+      .coin.active { border-color: #ff7f50; box-shadow: 0 0 20px #ff7f50; }
+      /* 弹窗遮罩层：全屏半透明遮罩 */
+      #alert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 997; display: none; }
+      /* 核心：还原弹窗宽幅，90%屏宽显示，无最大宽度限制 */
+      #custom-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-height: 80vh; background: #fff; border-radius: 12px; z-index: 998; display: none; flex-direction: column; }
+      /* 钱币卡片悬浮效果：互换弹窗内卡片hover动效 */
+      .coin-card { box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s ease; }
+      .coin-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+      /* 弹窗滚动条优化：窄条更美观，适配宽幅弹窗 */
+      #alert-content::-webkit-scrollbar { width: 6px; }
+      #alert-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+      #alert-content::-webkit-scrollbar-thumb:hover { background: #999; }
+    `;
+    document.head.appendChild(style);
+  }
 };
 
+// 绑定页面核心按钮点击事件（新局/抽层/查看所有钱币）
+document.getElementById('new-round').onclick = startNewRound;
+document.getElementById('next-layer').onclick = drawThree;
+document.getElementById('show-all').onclick = showAllCoins;
+// 页面初始化结束
