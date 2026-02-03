@@ -25,7 +25,7 @@ body {
   overflow: hidden;
 }
 
-/* 顶部功能按钮栏 */
+
 .button-bar {
   position: absolute;
   top: 20px;
@@ -57,7 +57,7 @@ button:hover {
   transform: translateY(-2px);
 }
 
-/* 手动互换按钮样式（3/5层显示） */
+
 #coin-swap-btn {
   padding: 8px 20px;
   font-size: 16px;
@@ -67,7 +67,7 @@ button:hover {
   background: rgba(51, 141, 56, 0.95);
 }
 
-/* 钱币展示容器（主界面） */
+
 #coin-box {
   position: absolute;
   top: 50%;
@@ -122,7 +122,7 @@ button:hover {
   transform: translateX(-50%) scale(1.1);
 }
 
-/* 抽取结果展示 */
+
 #draw-result {
   position: absolute;
   bottom: 20px;
@@ -159,7 +159,7 @@ h3 {
   font-size: 20px;
 }
 
-/* 互换弹窗核心样式：弹性布局+底部固定按钮 */
+
 #custom-alert {
   position: fixed;
   top: 50%;
@@ -190,7 +190,7 @@ h3 {
   display: none;
 }
 
-/* 弹窗头部 */
+
 #custom-alert .alert-header {
   position: sticky;
   top: 0;
@@ -218,7 +218,7 @@ h3 {
   background: rgba(232, 91, 91, 0.95);
 }
 
-/* 弹窗内容区：可滚动 */
+
 #alert-content {
   flex: 1;
   padding: 25px;
@@ -231,7 +231,7 @@ h3 {
   z-index: 1;
 }
 
-/* 核心：钱币等宽网格布局 - 所有钱币卡片大小完全相同 */
+
 .coin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -239,7 +239,7 @@ h3 {
   width: 100%;
 }
 
-/* 核心：统一钱币卡片样式 - 固定高度，确保大小一致 */
+
 .coin-card {
   padding: 18px;
   border: 2px solid #eee;
@@ -253,7 +253,7 @@ h3 {
   justify-content: flex-start;
 }
 
-/* 互换界面-钱币名称（效果上方，专属样式，醒目） */
+
 .swap-coin-name {
   font-size: 18px;
   font-weight: 700;
@@ -264,7 +264,7 @@ h3 {
   line-height: 1.2;
 }
 
-/* 互换界面-钱币效果（名称下方，专属样式） */
+
 .swap-coin-effect {
   font-size: 14px;
   color: #333;
@@ -277,14 +277,14 @@ h3 {
   line-height: 1.5;
 }
 
-/* 互换界面-投出次数（效果下方） */
+
 .swap-coin-count {
   font-size: 12px;
   color: #666;
   margin-top: 4px;
 }
 
-/* 互换界面-选择按钮（卡片最底部） */
+
 .coin-select-btn {
   padding: 8px 0;
   font-size: 15px;
@@ -303,7 +303,7 @@ h3 {
   box-shadow: none;
 }
 
-/* 弹窗底部：固定不滚动 */
+
 #alert-footer {
   padding: 20px 25px;
   background: #fef0f0;
@@ -311,7 +311,7 @@ h3 {
   z-index: 2;
 }
 
-/* 移动端适配 */
+
 @media (max-width: 600px) {
   .coin { 
     width: 70px; 
@@ -366,7 +366,7 @@ h3 {
     font-size: 14px;
     padding: 6px 15px;
   }
-  /* 移动端等宽卡片适配 */
+  
   .coin-grid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
@@ -386,7 +386,7 @@ h3 {
   }
 }
 
-/* 强制PC端样式 */
+
 @media (min-width: 601px) {
   #coin-box {
     width: 750px !important;
