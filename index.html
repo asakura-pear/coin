@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- 加载遮罩（预加载时显示） -->
   <div id="loading-mask" style="position: fixed; top:0; left:0; width:100vw; height:100vh; background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:99999;">
     <div style="color:#ffef9f; font-size:24px; margin-bottom:20px;">少女折寿中...</div>
     <div style="width:200px; height:8px; background:#333; border-radius:4px; overflow:hidden;">
@@ -16,24 +15,16 @@
     </div>
     <div id="loading-text" style="color:#fff; font-size:14px; margin-top:10px;">0%</div>
   </div>
-
   <div class="table" id="table-bg">
-    <!-- 按钮栏 -->
     <div class="button-bar">
       <button id="new-round">开始新局</button>
       <button id="next-layer">下一层</button>
       <button id="show-all" class="right-btn">查看所有效果</button>
     </div>
 
-    <!-- 钱币容器 -->
     <div id="coin-box"></div>
-
-    <!-- 结果展示 -->
     <div id="draw-result"></div>
   </div>
-
   <script src="coin_draw.js"></script>
 </body>
-
 </html>
-
