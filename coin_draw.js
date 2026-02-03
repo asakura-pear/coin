@@ -1,3 +1,12 @@
+const CODE_VERSION = "V20260204.10"; 
+
+console.log(
+  "%c 钱币抽选代码版本号：%c" + CODE_VERSION + "%c （F12→Sources可查看源代码版本）",
+  "color: #fff; background: #28a745; padding: 4px 8px; border-radius: 4px 0 0 4px;",
+  "color: #fff; background: #d14949; padding: 4px 8px; border-radius: 0 4px 4px 0; font-weight: bold;",
+  "margin-left: 8px;"
+);
+window.CODE_VERSION = CODE_VERSION;
 let roundCoins = [];
 let layer = 0;
 let allCoins = [];
