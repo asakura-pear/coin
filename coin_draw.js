@@ -1,4 +1,4 @@
-const CODE_VERSION = "V20260204.10"; 
+const CODE_VERSION = "V20260204.12"; 
 
 console.log(
   "%c version：%c" + CODE_VERSION,
@@ -996,3 +996,4 @@ window.onload = async function() {
 document.getElementById('new-round').onclick = startNewRound;
 document.getElementById('next-layer').onclick = drawThree;
 document.getElementById('show-all').onclick = showAllCoins;
+
