@@ -1014,32 +1014,38 @@ function shuffleArray(arr) {
 
 // 页面初始化
 window.onload = async function() {
-  // 预加载素材→初始化弹窗→基础样式设置
   await preloadAssets();
   initCustomAlert();
   tableBg.style.backgroundImage = "url('https://img.cdn1.vip/i/697766f1ab102_1769432817.png')";
-  // 初始化隐藏核心控件
   document.getElementById('coin-swap-btn').style.display = 'none';
   document.getElementById('custom-alert').style.display = 'none';
   currentLayerActiveIndices = [];
-  // 初始化吉事成双删除标记集合
   window.jishiDeleteOuterLi = new Set();
 
-  // 样式兜底 - 适配放大后的钱币，优化高亮/弹窗/滚动条样式（无max-width限制）
+  // 【可选】页面右下角显示版本号（视觉化查看，不影响布局）
+  const versionTag = document.createElement('div');
+  versionTag.style.position = 'fixed';
+  versionTag.style.bottom = '10px';
+  versionTag.style.right = '10px';
+  versionTag.style.padding = '4px 8px';
+  versionTag.style.fontSize = '12px';
+  versionTag.style.color = '#fff';
+  versionTag.style.background = 'rgba(0,0,0,0.7)';
+  versionTag.style.borderRadius = '4px';
+  versionTag.style.zIndex = '9999'; // 置顶显示，不被遮挡
+  versionTag.textContent = `版本：${CODE_VERSION}`;
+  document.body.appendChild(versionTag);
+
+  // 原有样式兜底代码...
   if (!document.querySelector('.coin-grid-style')) {
     const style = document.createElement('style');
     style.className = 'coin-grid-style';
     style.textContent = `
-      /* 钱币投出高亮：适配100px大钱币，放大阴影更醒目 */
       .coin.active { border-color: #ff7f50; box-shadow: 0 0 20px #ff7f50; }
-      /* 弹窗遮罩层：全屏半透明遮罩 */
       #alert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 997; display: none; }
-      /* 核心：还原弹窗宽幅，90%屏宽显示，无最大宽度限制 */
       #custom-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-height: 80vh; background: #fff; border-radius: 12px; z-index: 998; display: none; flex-direction: column; }
-      /* 钱币卡片悬浮效果：互换弹窗内卡片hover动效 */
       .coin-card { box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s ease; }
       .coin-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-      /* 弹窗滚动条优化：窄条更美观，适配宽幅弹窗 */
       #alert-content::-webkit-scrollbar { width: 6px; }
       #alert-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
       #alert-content::-webkit-scrollbar-thumb:hover { background: #999; }
@@ -1047,8 +1053,3 @@ window.onload = async function() {
     document.head.appendChild(style);
   }
 };
-
-// 绑定页面核心按钮点击事件（新局/抽层/查看所有钱币）
-document.getElementById('new-round').onclick = startNewRound;
-document.getElementById('next-layer').onclick = drawThree;
-document.getElementById('show-all').onclick = showAllCoins;
