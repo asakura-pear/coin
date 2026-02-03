@@ -897,7 +897,7 @@ async function showAllCoins() {
       const delayTip = currentCoin?.delayPeaceTransform ? '<span style="color:#ff4500;">【祸不单行延迟变换平安喜乐】</span>' : '';
       // 吉事成双待替换标记
       const jishiTip = (currentCoin?.nextTransform === '衡-平安喜乐' && currentCoin?.nextTransformPending) ? '<span style="color:#28a745;">【吉事成双待替换为平安喜乐】</span>' : '';
-      effectHtml += `【${coin.name}】：★${coin.effect || '无特殊效果'}（已投出${count}次）${delayTip}${jishiTip}。<br><br>`;
+      effectHtml += `【${coin.name}】：★${coin.effect || '无特殊效果'}（已投出${count}次）${delayTip}${jishiTip}<br><br>`;
     });
   } else {
     effectHtml += '本局暂无有效钱币<br><br>';
@@ -907,7 +907,7 @@ async function showAllCoins() {
   effectHtml += '<strong>【其他钱币（外库）】</strong><br>';
   if (otherCoins.length > 0) {
     otherCoins.forEach(coin => {
-      effectHtml += `${coin.name}：${coin.effect || '无特殊效果'}。<br><br>`;
+      effectHtml += `${coin.name}：${coin.effect || '无特殊效果'}<br><br>`;
     });
   } else {
     effectHtml += '外库暂无可用钱币<br><br>';
