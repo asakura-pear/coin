@@ -1,4 +1,4 @@
-const CODE_VERSION = "V20260205.02"; 
+const CODE_VERSION = "V20260205.03"; 
 
 console.log(
   "%c version：%c" + CODE_VERSION,
@@ -1005,7 +1005,11 @@ document.getElementById('show-all').onclick = showAllCoins;
   const cheatImages = [
     'https://img.cdn1.vip/i/69843a3429eaf_1770273332.webp',
     'https://img.cdn1.vip/i/69843a33aa217_1770273331.webp',
-    'https://img.cdn1.vip/i/69843a2fac513_1770273327.webp'
+    'https://img.cdn1.vip/i/69843a2fac513_1770273327.webp',
+    'https://img.cdn1.vip/i/69845695bf62d_1770280597.webp',
+    'https://img.cdn1.vip/i/69845697d0a49_1770280599.webp',
+    'https://img.cdn1.vip/i/6984568e9b192_1770280590.jpg',
+    'https://img.cdn1.vip/i/6984568f32766_1770280591.webp'
   ];
 
   function initCheatModal() {
