@@ -1,4 +1,4 @@
-const CODE_VERSION = "V20260205.11"; 
+const CODE_VERSION = "V20260205.02"; 
 
 console.log(
   "%c version：%c" + CODE_VERSION,
@@ -998,19 +998,82 @@ document.getElementById('next-layer').onclick = drawThree;
 document.getElementById('show-all').onclick = showAllCoins;
 
 (function() {
-  const targetCode = '737.5';
-  let inputRecord = '';
-  let timeoutTimer = null;
-  const resetTime = 1500;
+  const targetCode = '737.5'; 
+  let inputRecord = ''; 
+  let timeoutTimer = null; 
+  const resetTime = 1500; 
+  const cheatImages = [
+    'https://img.cdn1.vip/i/69843a3429eaf_1770273332.webp',
+    'https://img.cdn1.vip/i/69843a33aa217_1770273331.webp',
+    'https://img.cdn1.vip/i/69843a2fac513_1770273327.webp'
+  ];
+
+  function initCheatModal() {
+    if (document.getElementById('cheat-modal')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'cheat-modal-overlay';
+    overlay.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); z-index: 9999; display: none;
+      align-items: center; justify-content: center;
+    `;
+    document.body.appendChild(overlay);
+
+    const modal = document.createElement('div');
+    modal.id = 'cheat-modal';
+    modal.style.cssText = `
+      background: #fff; border-radius: 16px; padding: 25px; width: 90%; max-width: 450px;
+      text-align: center; box-shadow: 0 0 30px rgba(255, 127, 80, 0.6);
+    `;
+    overlay.appendChild(modal);
+
+    const imgContainer = document.createElement('div');
+    imgContainer.id = 'cheat-modal-img';
+    imgContainer.style.cssText = `
+      width: 100%; height: 200px; margin: 15px 0;
+      border-radius: 8px; overflow: hidden; display: flex;
+      align-items: center; justify-content: center;
+    `;
+    modal.appendChild(imgContainer);
+
+    const text = document.createElement('div');
+    text.id = 'cheat-modal-text';
+    text.style.cssText = `
+      font-size: 20px; font-weight: bold; color: #d14949;
+      margin: 10px 0 25px; line-height: 1.5;
+    `;
+    text.textContent = '请不要作弊哦😮';
+    modal.appendChild(text);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'cheat-modal-close';
+    closeBtn.style.cssText = `
+      padding: 10px 30px; font-size: 16px; font-weight: bold;
+      background: #28a745; color: #fff; border: none; border-radius: 8px;
+      cursor: pointer; transition: all 0.3s ease;
+    `;
+    closeBtn.textContent = '知道啦';
+    closeBtn.onmouseover = () => closeBtn.style.background = '#218838';
+    closeBtn.onmouseout = () => closeBtn.style.background = '#28a745';
+    closeBtn.onclick = () => overlay.style.display = 'none';
+    modal.appendChild(closeBtn);
+  }
+
+  function showCheatModal() {
+    initCheatModal();
+    const overlay = document.getElementById('cheat-modal-overlay');
+    const imgContainer = document.getElementById('cheat-modal-img');
+    const randomImgUrl = cheatImages[Math.floor(Math.random() * cheatImages.length)];
+    imgContainer.innerHTML = `<img src="${randomImgUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="作弊提示">`;
+    overlay.style.display = 'flex';
+  }
 
   // 键盘监听
   document.addEventListener('keydown', function(e) {
     let key = '';
-    if (e.key >= '0' && e.key <= '9') {
-      key = e.key; 
-    } else if (e.key === '.' || e.key === 'Decimal') {
-      key = '.'; 
-    }
+    if (e.key >= '0' && e.key <= '9') key = e.key;
+    else if (e.key === '.' || e.key === 'Decimal') key = '.';
     if (!key) {
       clearInputRecord();
       return;
@@ -1023,13 +1086,12 @@ document.getElementById('show-all').onclick = showAllCoins;
       return;
     }
 
-    // 超时重置
     clearTimeout(timeoutTimer);
     timeoutTimer = setTimeout(clearInputRecord, resetTime);
 
     if (inputRecord === targetCode) {
       clearInputRecord();
-      alert('请不要作弊哦😮');
+      showCheatModal(); 
     }
   });
 
@@ -1038,5 +1100,6 @@ document.getElementById('show-all').onclick = showAllCoins;
     inputRecord = '';
     clearTimeout(timeoutTimer);
   }
-})();
 
+  window.addEventListener('load', initCheatModal);
+})();
