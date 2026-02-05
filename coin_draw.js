@@ -1,4 +1,4 @@
-const CODE_VERSION = "V20260204.12"; 
+const CODE_VERSION = "V20260204.10"; 
 
 console.log(
   "%c version：%c" + CODE_VERSION,
@@ -997,3 +997,45 @@ document.getElementById('new-round').onclick = startNewRound;
 document.getElementById('next-layer').onclick = drawThree;
 document.getElementById('show-all').onclick = showAllCoins;
 
+(function() {
+  const targetCode = '737.5';
+  let inputRecord = '';
+  let timeoutTimer = null;
+  const resetTime = 1500;
+
+  // 键盘监听
+  document.addEventListener('keydown', function(e) {
+    let key = '';
+    if (e.key >= '0' && e.key <= '9') {
+      key = e.key; 
+    } else if (e.key === '.' || e.key === 'Decimal') {
+      key = '.'; 
+    }
+    if (!key) {
+      clearInputRecord();
+      return;
+    }
+
+    inputRecord += key;
+    inputRecord = inputRecord.slice(0, targetCode.length);
+    if (inputRecord !== targetCode.slice(0, inputRecord.length)) {
+      clearInputRecord();
+      return;
+    }
+
+    // 超时重置
+    clearTimeout(timeoutTimer);
+    timeoutTimer = setTimeout(clearInputRecord, resetTime);
+
+    if (inputRecord === targetCode) {
+      clearInputRecord();
+      alert('请不要作弊哦😮');
+    }
+  });
+
+  // 清空输入记录
+  function clearInputRecord() {
+    inputRecord = '';
+    clearTimeout(timeoutTimer);
+  }
+})();
