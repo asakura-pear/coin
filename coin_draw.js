@@ -1,4 +1,4 @@
-const CODE_VERSION = "V20260205.03"; 
+const CODE_VERSION = "V20260205.02"; 
 
 console.log(
   "%c version：%c" + CODE_VERSION,
@@ -1011,6 +1011,27 @@ document.getElementById('show-all').onclick = showAllCoins;
     'https://img.cdn1.vip/i/6984568e9b192_1770280590.jpg',
     'https://img.cdn1.vip/i/6984568f32766_1770280591.webp'
   ];
+  let usedImgIndices = [];
+
+  function initCheatModal() {
+    if (document.getElementById('cheat-modal')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'cheat-trigger-btn';
+    btn.style.cssText = `
+      position: fixed; bottom: 20px; left: 20px; z-index: 9998;
+      width: 50px; height: 50px; border-radius: 50%;
+      background: #ff7f50; color: #fff; border: none;
+      font-size: 12px; cursor: pointer; opacity: 0.3;
+      transition: all 0.3s ease;
+    `;
+    btn.title = '一键触发作弊提示（仅测试）';
+    btn.textContent = '测试';
+    btn.onmouseover = () => btn.style.opacity = '1';
+    btn.onmouseout = () => btn.style.opacity = '0.3';
+    btn.onclick = () => showCheatModal();
+    document.body.appendChild(btn);
+  }
 
   function initCheatModal() {
     if (document.getElementById('cheat-modal')) return;
@@ -1060,20 +1081,34 @@ document.getElementById('show-all').onclick = showAllCoins;
     closeBtn.textContent = '知道啦';
     closeBtn.onmouseover = () => closeBtn.style.background = '#218838';
     closeBtn.onmouseout = () => closeBtn.style.background = '#28a745';
-    closeBtn.onclick = () => overlay.style.display = 'none';
+    closeBtn.onclick = () => {
+      overlay.style.display = 'none';
+      clearTimeout(timeoutTimer);
+    };
     modal.appendChild(closeBtn);
+  }
+
+  function getRandomUnusedImg() {
+    if (usedImgIndices.length >= cheatImages.length) {
+      usedImgIndices = [];
+    }
+    const unusedIndices = cheatImages
+      .map((_, idx) => idx)
+      .filter(idx => !usedImgIndices.includes(idx));
+    const randomIdx = unusedIndices[Math.floor(Math.random() * unusedIndices.length)];
+    usedImgIndices.push(randomIdx);
+    return cheatImages[randomIdx];
   }
 
   function showCheatModal() {
     initCheatModal();
     const overlay = document.getElementById('cheat-modal-overlay');
     const imgContainer = document.getElementById('cheat-modal-img');
-    const randomImgUrl = cheatImages[Math.floor(Math.random() * cheatImages.length)];
+    const randomImgUrl = getRandomUnusedImg();
     imgContainer.innerHTML = `<img src="${randomImgUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="作弊提示">`;
     overlay.style.display = 'flex';
   }
 
-  // 键盘监听
   document.addEventListener('keydown', function(e) {
     let key = '';
     if (e.key >= '0' && e.key <= '9') key = e.key;
@@ -1095,15 +1130,17 @@ document.getElementById('show-all').onclick = showAllCoins;
 
     if (inputRecord === targetCode) {
       clearInputRecord();
-      showCheatModal(); 
+      showCheatModal();
     }
   });
 
-  // 清空输入记录
   function clearInputRecord() {
     inputRecord = '';
     clearTimeout(timeoutTimer);
   }
 
-  window.addEventListener('load', initCheatModal);
+  window.addEventListener('load', function() {
+    createCheatTriggerBtn();
+    initCheatModal();
+  });
 })();
