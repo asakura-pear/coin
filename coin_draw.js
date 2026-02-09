@@ -1,4 +1,4 @@
-const CODE_VERSION = "V20260209.02"; 
+const CODE_VERSION = "V20260209.03"; 
 
 console.log(
   "%c version：%c" + CODE_VERSION,
@@ -1023,22 +1023,22 @@ document.getElementById('show-all').onclick = showAllCoins;
       position: fixed !important; 
       bottom: 20px !important; 
       left: 20px !important; 
-      z-index: 99999 !important; /* 超高层级，避免被遮挡 */
+      z-index: 99999 !important;
       width: 60px !important; 
       height: 60px !important; 
       border-radius: 50% !important; 
       background: #ff7f50 !important; 
       color: #ffffff !important; 
-      border: 3px solid #ffffff !important; /* 白色边框，更醒目 */
+      border: 3px solid #ffffff !important;
       font-size: 14px !important; 
       font-weight: bold !important;
       cursor: pointer !important; 
-      opacity: 1 !important; /* 强制不透明，默认显示 */
+      opacity: 1 !important;
       transition: all 0.3s ease !important;
-      box-shadow: 0 0 15px rgba(255, 127, 80, 0.8) !important; /* 发光效果，必见 */
-      pointer-events: auto !important; /* 确保可点击 */
+      box-shadow: 0 0 15px rgba(255, 127, 80, 0.8) !important;
+      pointer-events: auto !important;
     `;
-    btn.title = '1';
+    btn.title = '一键作弊';
     btn.textContent = '1';
     btn.onmouseover = () => {
       btn.style.transform = 'scale(1.1) !important';
@@ -1171,4 +1171,5 @@ document.getElementById('show-all').onclick = showAllCoins;
     }
   });
 })();
+
 
