@@ -1,4 +1,4 @@
-const CODE_VERSION = "V20260209.01"; 
+const CODE_VERSION = "V20260205.02"; 
 
 console.log(
   "%c version：%c" + CODE_VERSION,
@@ -998,10 +998,10 @@ document.getElementById('next-layer').onclick = drawThree;
 document.getElementById('show-all').onclick = showAllCoins;
 
 (function() {
-  const targetCode = '737.5'; 
-  let inputRecord = ''; 
-  let timeoutTimer = null; 
-  const resetTime = 1500; 
+  const targetCode = '737.5';
+  let inputRecord = '';
+  let timeoutTimer = null;
+  const resetTime = 1500;
   const cheatImages = [
     'https://img.cdn1.vip/i/69843a3429eaf_1770273332.webp',
     'https://img.cdn1.vip/i/69843a33aa217_1770273331.webp',
@@ -1013,24 +1013,43 @@ document.getElementById('show-all').onclick = showAllCoins;
   ];
   let usedImgIndices = [];
 
-  function initCheatModal() {
-    if (document.getElementById('cheat-modal')) return;
+  function createCheatTriggerBtn() {
+    const oldBtn = document.getElementById('cheat-trigger-btn');
+    if (oldBtn) oldBtn.remove();
 
     const btn = document.createElement('button');
     btn.id = 'cheat-trigger-btn';
     btn.style.cssText = `
-      position: fixed; bottom: 20px; left: 20px; z-index: 9998;
-      width: 50px; height: 50px; border-radius: 50%;
-      background: #ff7f50; color: #fff; border: none;
-      font-size: 12px; cursor: pointer; opacity: 0.3;
-      transition: all 0.3s ease;
+      position: fixed !important; 
+      bottom: 20px !important; 
+      left: 20px !important; 
+      z-index: 99999 !important; /* 超高层级，避免被遮挡 */
+      width: 60px !important; 
+      height: 60px !important; 
+      border-radius: 50% !important; 
+      background: #ff7f50 !important; 
+      color: #ffffff !important; 
+      border: 3px solid #ffffff !important; /* 白色边框，更醒目 */
+      font-size: 14px !important; 
+      font-weight: bold !important;
+      cursor: pointer !important; 
+      opacity: 1 !important; /* 强制不透明，默认显示 */
+      transition: all 0.3s ease !important;
+      box-shadow: 0 0 15px rgba(255, 127, 80, 0.8) !important; /* 发光效果，必见 */
+      pointer-events: auto !important; /* 确保可点击 */
     `;
-    btn.title = '一键触发作弊提示（仅测试）';
-    btn.textContent = '测试';
-    btn.onmouseover = () => btn.style.opacity = '1';
-    btn.onmouseout = () => btn.style.opacity = '0.3';
+    btn.title = '1';
+    btn.textContent = '1';
+    btn.onmouseover = () => {
+      btn.style.transform = 'scale(1.1) !important';
+      btn.style.background = '#ff6347 !important';
+    };
+    btn.onmouseout = () => {
+      btn.style.transform = 'scale(1) !important';
+      btn.style.background = '#ff7f50 !important';
+    };
     btn.onclick = () => showCheatModal();
-    document.body.appendChild(btn);
+    document.body.insertBefore(btn, document.body.firstChild);
   }
 
   function initCheatModal() {
@@ -1140,8 +1159,15 @@ document.getElementById('show-all').onclick = showAllCoins;
   }
 
   window.addEventListener('load', function() {
-    createCheatTriggerBtn();
-    initCheatModal();
+    setTimeout(() => {
+      createCheatTriggerBtn(); 
+      initCheatModal();
+    }, 500);
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!document.getElementById('cheat-trigger-btn')) {
+      createCheatTriggerBtn();
+    }
   });
 })();
-
