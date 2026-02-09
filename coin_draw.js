@@ -1039,7 +1039,7 @@ document.getElementById('show-all').onclick = showAllCoins;
       pointer-events: auto !important;
     `;
     btn.title = '一键作弊';
-    btn.textContent = '1';
+    btn.textContent = '一键作弊';
     btn.onmouseover = () => {
       btn.style.transform = 'scale(1.1) !important';
       btn.style.background = '#ff6347 !important';
@@ -1171,5 +1171,6 @@ document.getElementById('show-all').onclick = showAllCoins;
     }
   });
 })();
+
 
 
