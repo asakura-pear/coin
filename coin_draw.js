@@ -1,4 +1,4 @@
-const CODE_VERSION = "V20260209.03"; 
+const CODE_VERSION = "V20260209.04"; 
 
 console.log(
   "%c version：%c" + CODE_VERSION,
@@ -1171,6 +1171,7 @@ document.getElementById('show-all').onclick = showAllCoins;
     }
   });
 })();
+
 
 
 
